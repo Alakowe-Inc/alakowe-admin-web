@@ -3,7 +3,6 @@ import { ArrowLeft, Check, X, Ban, Edit, Bell, User, Calendar, Tag, Heart, FileT
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { COVER_IMAGES } from "@/lib/covers";
 import { useAdminListing, useApproveListing, useDeclineListing } from "@/lib/api/admin/admin.hooks";
 import { toAdminListing } from "@/lib/api/admin/admin-adapter";
 import { useState } from "react";
@@ -24,6 +23,7 @@ export default function ListingDetail() {
 
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const isMock = import.meta.env.VITE_USE_MOCK === "true";
 
@@ -36,7 +36,10 @@ export default function ListingDetail() {
     );
   }
 
-  const cover = COVER_IMAGES[listing.title];
+  const cover = selectedImage ?? listing.coverImage;
+  const allImages = listing.coverImage
+    ? [listing.coverImage, ...listing.images.filter((u) => u !== listing.coverImage)]
+    : listing.images;
   const locked = listing.status !== "Pending";
 
   async function handleApprove() {
@@ -101,6 +104,15 @@ export default function ListingDetail() {
           <div className="space-y-3">
             {cover ? <img src={cover} alt={listing.title} className="aspect-[3/4] w-full rounded-xl object-cover shadow-elegant" />
               : <div className="aspect-[3/4] rounded-xl bg-muted" />}
+            {allImages.length > 1 && (
+              <div className="grid grid-cols-3 gap-2">
+                {allImages.map((url, i) => (
+                  <button key={i} onClick={() => setSelectedImage(url)} className={`aspect-[3/4] overflow-hidden rounded-lg border-2 transition-all ${url === (selectedImage ?? listing.coverImage) ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-muted-foreground/30"}`}>
+                    <img src={url} alt={`${listing.title} ${i + 1}`} className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-5">

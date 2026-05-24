@@ -66,9 +66,16 @@ const mockListing: ListingResponse = {
   status: "PendingApproval",
   categoryName: "Fiction",
   createdBy: "seller@example.com",
+  seller: "John Doe",
   dateCreated: new Date().toISOString(),
   cartItemCount: 0,
   wishlistItemCount: 0,
+  coverImageFileName: "https://placehold.co/400x600?text=Mock+Book",
+  imageFileNames: [
+    "https://placehold.co/400x600?text=Mock+Book",
+    "https://placehold.co/400x600?text=Image+2",
+    "https://placehold.co/400x600?text=Image+3",
+  ],
 }
 
 const mockPagedResult: ListingResponsePagedResult = {

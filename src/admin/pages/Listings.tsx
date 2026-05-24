@@ -5,7 +5,6 @@ import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { COVER_IMAGES } from "@/lib/covers";
 import { useAdminListings, useApproveListing, useDeclineListing } from "@/lib/api/admin/admin.hooks";
 import { toAdminListing, type AdminListingDisplay } from "@/lib/api/admin/admin-adapter";
 import type { ListingStatus } from "@/lib/api/types";
@@ -29,8 +28,7 @@ const STATUS_FILTER_MAP: Record<(typeof FILTERS)[number], ListingStatus | undefi
 const PAGE_SIZE = 8;
 
 function Cover({ listing }: { listing: AdminListingDisplay }) {
-  const src = COVER_IMAGES[listing.title];
-  if (src) return <img src={src} alt={listing.title} loading="lazy" className="h-full w-full object-cover" />;
+  if (listing.coverImage) return <img src={listing.coverImage} alt={listing.title} loading="lazy" className="h-full w-full object-cover" />;
   return <div className="h-full w-full bg-gradient-to-br from-primary/10 to-muted" />;
 }
 
@@ -165,12 +163,11 @@ export default function Listings() {
               </thead>
               <tbody>
                 {paged.map((l) => {
-                  const cover = COVER_IMAGES[l.title];
                   return (
                     <tr key={l.id} onClick={() => navigate(`/admin/listings/${l.id}`)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2.5">
-                          {cover ? <img src={cover} alt={l.title} className="h-10 w-7 rounded object-cover" /> : <div className="h-10 w-7 rounded bg-muted" />}
+                          {l.coverImage ? <img src={l.coverImage} alt={l.title} className="h-10 w-7 rounded object-cover" /> : <div className="h-10 w-7 rounded bg-muted" />}
                           <span className="font-medium text-foreground">{l.title}</span>
                         </div>
                       </td>

@@ -13,6 +13,8 @@ export interface AdminListingDisplay {
   date: string
   description: string
   loveNote: string
+  coverImage: string | null
+  images: string[]
 }
 
 const statusMap: Record<string, string> = {
@@ -29,7 +31,7 @@ export function toAdminListing(l: ListingResponse): AdminListingDisplay {
     id: String(l.id ?? ""),
     title: l.title ?? "",
     author: l.author ?? "",
-    seller: l.createdBy ?? "",
+    seller: l.seller ?? l.createdBy ?? "",
     price: Math.round((l.price ?? 0) / 100),
     category: l.categoryName ?? "",
     status: statusMap[l.status ?? ""] ?? l.status ?? "",
@@ -38,5 +40,7 @@ export function toAdminListing(l: ListingResponse): AdminListingDisplay {
     date: l.dateCreated ?? "",
     description: l.description ?? "",
     loveNote: l.loveNote ?? "",
+    coverImage: l.coverImageFileName ?? null,
+    images: l.imageFileNames ?? [],
   }
 }

@@ -76,6 +76,7 @@ export interface ListingResponse {
   status?: ListingStatus
   categoryName?: string | null
   createdBy?: string | null
+  seller?: string | null
   dateCreated?: string | null
   dateModified?: string | null
   cartItemCount?: number
