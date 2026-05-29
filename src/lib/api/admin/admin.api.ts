@@ -152,11 +152,11 @@ export async function getAreasByStateApi(stateId: number): Promise<AreaResponse[
   return data as AreaResponse[]
 }
 
-export type {
-  AddStateRequestDto,
-  UpdateStateRequestDto,
-  StateResponse,
-  AddAreaRequestDto,
-  UpdateAreaRequestDto,
-  AreaResponse,
-} from "../types"
+// export type {
+//   AddStateRequestDto,
+//   UpdateStateRequestDto,
+//   StateResponse,
+//   AddAreaRequestDto,
+//   UpdateAreaRequestDto,
+//   AreaResponse,
+// } from "../types"
