@@ -14,6 +14,16 @@ import {
   declineListingApi,
   getAdminListingsByFilterApi,
   getAdminListingByIdApi,
+  createStateApi,
+  updateStateApi,
+  deleteStateApi,
+  getStateByIdApi,
+  getAllStatesApi,
+  createAreaApi,
+  updateAreaApi,
+  deleteAreaApi,
+  getAreaByIdApi,
+  getAreasByStateApi,
   type AdminListingFilterParams,
 } from "./admin.api"
 import type {
@@ -27,6 +37,12 @@ import type {
   CategoryResponse,
   ListingResponse,
   ListingResponsePagedResult,
+  AddStateRequestDto,
+  UpdateStateRequestDto,
+  StateResponse,
+  AddAreaRequestDto,
+  UpdateAreaRequestDto,
+  AreaResponse,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -197,6 +213,107 @@ export function useDeclineListing() {
       withMock(true, () => declineListingApi(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+    },
+  })
+}
+
+const mockState: StateResponse = { id: 1, name: "Mock State" }
+
+const mockArea: AreaResponse = { id: 1, stateId: 1, name: "Mock Area" }
+
+export function useAllStates() {
+  return useQuery({
+    queryKey: ["admin-states", "all"],
+    queryFn: () => withMock([mockState], () => getAllStatesApi()),
+  })
+}
+
+export function useStateById(id: number) {
+  return useQuery({
+    queryKey: ["admin-states", id],
+    queryFn: () => withMock(mockState, () => getStateByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useCreateState() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddStateRequestDto) =>
+      withMock(mockState, () => createStateApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-states"] })
+    },
+  })
+}
+
+export function useUpdateState() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateStateRequestDto) =>
+      withMock(mockState, () => updateStateApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-states"] })
+    },
+  })
+}
+
+export function useDeleteState() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteStateApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-states"] })
+    },
+  })
+}
+
+export function useAreasByState(stateId: number) {
+  return useQuery({
+    queryKey: ["admin-areas", "by-state", stateId],
+    queryFn: () => withMock([mockArea], () => getAreasByStateApi(stateId)),
+    enabled: !!stateId,
+  })
+}
+
+export function useAreaById(id: number) {
+  return useQuery({
+    queryKey: ["admin-areas", id],
+    queryFn: () => withMock(mockArea, () => getAreaByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useCreateArea() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddAreaRequestDto) =>
+      withMock(mockArea, () => createAreaApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-areas"] })
+    },
+  })
+}
+
+export function useUpdateArea() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateAreaRequestDto) =>
+      withMock(mockArea, () => updateAreaApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-areas"] })
+    },
+  })
+}
+
+export function useDeleteArea() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteAreaApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-areas"] })
     },
   })
 }
