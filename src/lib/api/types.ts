@@ -105,3 +105,34 @@ export interface CategoryResponse {
   id?: number
   name?: string | null
 }
+
+export interface AddStateRequestDto {
+  name?: string | null
+}
+
+export interface UpdateStateRequestDto {
+  id?: number
+  name?: string | null
+}
+
+export interface StateResponse {
+  id?: number
+  name?: string | null
+}
+
+export interface AddAreaRequestDto {
+  stateId?: number
+  name?: string | null
+}
+
+export interface UpdateAreaRequestDto {
+  id?: number
+  stateId?: number
+  name?: string | null
+}
+
+export interface AreaResponse {
+  id?: number
+  stateId?: number
+  name?: string | null
+}

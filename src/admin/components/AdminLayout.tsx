@@ -17,6 +17,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/analytics": { title: "Analytics", subtitle: "Traffic, growth and conversion insights." },
   "/admin/reports": { title: "Reports", subtitle: "Export and review platform reports." },
   "/admin/settings": { title: "Settings", subtitle: "Configure platform behaviour and policies." },
+  "/admin/locations": { title: "Locations", subtitle: "Manage states and areas for listings and shipping." },
   "/admin/insights": { title: "AI Insights", subtitle: "Auto-generated trends, alerts and opportunities." },
 };
 

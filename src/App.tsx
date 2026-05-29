@@ -21,6 +21,7 @@ import DropoffCentres from "@/admin/pages/DropoffCentres";
 import DropoffDetail from "@/admin/pages/DropoffDetail";
 import Analytics from "@/admin/pages/Analytics";
 import Settings from "@/admin/pages/Settings";
+import Locations from "@/admin/pages/Locations";
 import OrderDetail from "@/admin/pages/OrderDetail";
 import ListingDetail from "@/admin/pages/ListingDetail";
 import PickupDetail from "@/admin/pages/PickupDetail";
@@ -60,6 +61,7 @@ const App = () => (
           <Route path="/admin/dropoffs/centres" element={adminWrap(<DropoffCentres />)} />
           <Route path="/admin/analytics" element={adminWrap(<Analytics />)} />
           <Route path="/admin/reports" element={<Navigate to="/admin/analytics" replace />} />
+          <Route path="/admin/locations" element={adminWrap(<Locations />)} />
           <Route path="/admin/settings" element={adminWrap(<Settings />)} />
           <Route path="/admin/insights" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
