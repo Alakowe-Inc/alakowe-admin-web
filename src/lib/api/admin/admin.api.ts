@@ -11,6 +11,12 @@ import type {
   ListingResponse,
   ListingResponsePagedResult,
   ListingStatus,
+  StateResponse,
+  AddStateRequestDto,
+  UpdateStateRequestDto,
+  AreaResponse,
+  UpdateAreaRequestDto,
+  AddAreaRequestDto,
 } from "../types"
 
 type LoginBody = LoginRequestDto
