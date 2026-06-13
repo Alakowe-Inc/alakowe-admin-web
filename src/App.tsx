@@ -25,6 +25,8 @@ import Locations from "@/admin/pages/Locations";
 import OrderDetail from "@/admin/pages/OrderDetail";
 import ListingDetail from "@/admin/pages/ListingDetail";
 import PickupDetail from "@/admin/pages/PickupDetail";
+import ConfigurationDeliveryFees from "@/admin/pages/ConfigurationDeliveryFees";
+import ConfigurationPlatformFees from "@/admin/pages/ConfigurationPlatformFees";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +65,17 @@ const App = () => (
           <Route path="/admin/reports" element={<Navigate to="/admin/analytics" replace />} />
           <Route path="/admin/locations" element={adminWrap(<Locations />)} />
           <Route path="/admin/settings" element={adminWrap(<Settings />)} />
+
+          <Route
+            path="/admin/configuration/delivery-fees"
+            element={adminWrap(<ConfigurationDeliveryFees />)}
+          />
+          <Route
+            path="/admin/configuration/platform-fees"
+            element={adminWrap(<ConfigurationPlatformFees />)}
+          />
+
+          <Route path="/admin/configuration" element={<Navigate to="/admin/configuration/platform-fees" replace />} />
           <Route path="/admin/insights" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>

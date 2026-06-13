@@ -1,27 +1,49 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom"
 import {
-  LayoutDashboard, Users, BookOpen, ShoppingBag, Boxes,
-  CreditCard, Truck, PackageOpen, Building2, BarChart3, Settings,
-  MapPin, ChevronLeft, ChevronRight, ArrowLeft, LogOut,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Logo } from "./Logo";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { toast } from "react-toastify";
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  ShoppingBag,
+  Boxes,
+  CreditCard,
+  Truck,
+  PackageOpen,
+  Building2,
+  BarChart3,
+  Settings,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  LogOut,
+  Coins,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Logo } from "./Logo"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { toast } from "react-toastify"
 
 const items = [
   { label: "Dashboard", to: "/admin/dashboard", icon: LayoutDashboard },
+
   { label: "Users", to: "/admin/users", icon: Users },
   { label: "Listings", to: "/admin/listings", icon: BookOpen },
   { label: "Orders", to: "/admin/orders", icon: ShoppingBag },
   { label: "Inventory", to: "/admin/inventory", icon: Boxes },
   { label: "Payments", to: "/admin/payments", icon: CreditCard },
+
   { label: "Pickup Requests", to: "/admin/pickups", icon: Truck },
   { label: "Drop-off Books", to: "/admin/dropoffs/books", icon: PackageOpen },
   { label: "Drop-off Centres", to: "/admin/dropoffs/centres", icon: Building2 },
+
   { label: "Locations", to: "/admin/locations", icon: MapPin },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
+
   { label: "Settings", to: "/admin/settings", icon: Settings },
+
+  // Configuration group
+  { label: "Delivery Fees", to: "/admin/configuration/delivery-fees", icon: Truck },
+  { label: "Platform Fees", to: "/admin/configuration/platform-fees", icon: Coins },
 ];
 
 interface SidebarProps {
