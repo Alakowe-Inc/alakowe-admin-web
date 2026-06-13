@@ -136,3 +136,60 @@ export interface AreaResponse {
   stateId?: number
   name?: string | null
 }
+
+/* ───────── Admin Fee Configurations (Delivery + Platform) ───────── */
+
+export interface CreateDeliveryFeeConfigurationRequestDto {
+  originStateId?: number | null
+  originAreaId?: number | null
+  destinationStateId?: number | null
+  destinationAreaId?: number | null
+  minWeightGrams?: number
+  maxWeightGrams?: number
+  fee?: number
+  cap?: number | null
+  priority?: number
+}
+
+export interface UpdateDeliveryFeeConfigurationRequestDto extends CreateDeliveryFeeConfigurationRequestDto {
+  id?: number
+}
+
+export interface DeliveryFeeConfigurationResponse {
+  id?: number
+  originStateId?: number | null
+  originAreaId?: number | null
+  destinationStateId?: number | null
+  destinationAreaId?: number | null
+  minWeightGrams?: number
+  maxWeightGrams?: number
+  fee?: number
+  cap?: number | null
+  priority?: number
+}
+
+export interface CreatePlatformFeeConfigRequestDto {
+  markupPercent?: number
+  markupCap?: number | null
+  commissionPercent?: number
+  commissionCap?: number | null
+  isActive?: boolean
+  effectiveFrom?: string
+  effectiveTo?: string | null
+}
+
+export interface UpdatePlatformFeeConfigRequestDto extends CreatePlatformFeeConfigRequestDto {
+  id?: number
+}
+
+export interface PlatformFeeConfigResponse {
+  id?: number
+  markupPercent?: number
+  markupCap?: number | null
+  commissionPercent?: number
+  commissionCap?: number | null
+  isActive?: boolean
+  effectiveFrom?: string
+  effectiveTo?: string | null
+  dateCreated?: string
+}

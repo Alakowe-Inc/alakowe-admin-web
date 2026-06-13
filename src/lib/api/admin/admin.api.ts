@@ -17,6 +17,12 @@ import type {
   AreaResponse,
   UpdateAreaRequestDto,
   AddAreaRequestDto,
+  CreateDeliveryFeeConfigurationRequestDto,
+  UpdateDeliveryFeeConfigurationRequestDto,
+  DeliveryFeeConfigurationResponse,
+  CreatePlatformFeeConfigRequestDto,
+  UpdatePlatformFeeConfigRequestDto,
+  PlatformFeeConfigResponse,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -150,6 +156,73 @@ export async function getAreaByIdApi(id: number): Promise<AreaResponse> {
 export async function getAreasByStateApi(stateId: number): Promise<AreaResponse[]> {
   const { data } = await client.get(`/api/v1/AdminLocation/area/by-state/${stateId}`)
   return data as AreaResponse[]
+}
+
+/* ───────── Admin Delivery Fee Configurations ───────── */
+
+export async function createDeliveryFeeConfigApi(
+  body: CreateDeliveryFeeConfigurationRequestDto,
+): Promise<DeliveryFeeConfigurationResponse> {
+  const { data } = await client.post("/api/v1/AdminDeliveryFee/create", body)
+  return data as DeliveryFeeConfigurationResponse
+}
+
+export async function updateDeliveryFeeConfigApi(
+  body: UpdateDeliveryFeeConfigurationRequestDto,
+): Promise<DeliveryFeeConfigurationResponse> {
+  const { data } = await client.post("/api/v1/AdminDeliveryFee/update", body)
+  return data as DeliveryFeeConfigurationResponse
+}
+
+export async function deleteDeliveryFeeConfigApi(id: number): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/AdminDeliveryFee/delete/${id}`)
+  return data as boolean
+}
+
+export async function getDeliveryFeeConfigByIdApi(id: number): Promise<DeliveryFeeConfigurationResponse> {
+  const { data } = await client.get(`/api/v1/AdminDeliveryFee/${id}`)
+  return data as DeliveryFeeConfigurationResponse
+}
+
+export async function getAllDeliveryFeeConfigsApi(): Promise<DeliveryFeeConfigurationResponse[]> {
+  const { data } = await client.get("/api/v1/AdminDeliveryFee/all")
+  return data as DeliveryFeeConfigurationResponse[]
+}
+
+/* ───────── Admin Platform Fee Configurations ───────── */
+
+export async function createPlatformFeeConfigApi(
+  body: CreatePlatformFeeConfigRequestDto,
+): Promise<PlatformFeeConfigResponse> {
+  const { data } = await client.post("/api/v1/AdminPlatformFee/create", body)
+  return data as PlatformFeeConfigResponse
+}
+
+export async function updatePlatformFeeConfigApi(
+  body: UpdatePlatformFeeConfigRequestDto,
+): Promise<PlatformFeeConfigResponse> {
+  const { data } = await client.post("/api/v1/AdminPlatformFee/update", body)
+  return data as PlatformFeeConfigResponse
+}
+
+export async function deletePlatformFeeConfigApi(id: number): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/AdminPlatformFee/delete/${id}`)
+  return data as boolean
+}
+
+export async function getPlatformFeeConfigByIdApi(id: number): Promise<PlatformFeeConfigResponse> {
+  const { data } = await client.get(`/api/v1/AdminPlatformFee/${id}`)
+  return data as PlatformFeeConfigResponse
+}
+
+export async function getAllPlatformFeeConfigsApi(): Promise<PlatformFeeConfigResponse[]> {
+  const { data } = await client.get("/api/v1/AdminPlatformFee/all")
+  return data as PlatformFeeConfigResponse[]
+}
+
+export async function getActivePlatformFeeConfigApi(): Promise<PlatformFeeConfigResponse> {
+  const { data } = await client.get("/api/v1/AdminPlatformFee/active")
+  return data as PlatformFeeConfigResponse
 }
 
 // export type {

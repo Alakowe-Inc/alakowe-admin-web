@@ -25,6 +25,17 @@ import {
   getAreaByIdApi,
   getAreasByStateApi,
   type AdminListingFilterParams,
+  createDeliveryFeeConfigApi,
+  updateDeliveryFeeConfigApi,
+  deleteDeliveryFeeConfigApi,
+  getDeliveryFeeConfigByIdApi,
+  getAllDeliveryFeeConfigsApi,
+  createPlatformFeeConfigApi,
+  updatePlatformFeeConfigApi,
+  deletePlatformFeeConfigApi,
+  getPlatformFeeConfigByIdApi,
+  getAllPlatformFeeConfigsApi,
+  getActivePlatformFeeConfigApi,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -43,6 +54,12 @@ import type {
   AddAreaRequestDto,
   UpdateAreaRequestDto,
   AreaResponse,
+  CreateDeliveryFeeConfigurationRequestDto,
+  UpdateDeliveryFeeConfigurationRequestDto,
+  DeliveryFeeConfigurationResponse,
+  CreatePlatformFeeConfigRequestDto,
+  UpdatePlatformFeeConfigRequestDto,
+  PlatformFeeConfigResponse,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -314,6 +331,138 @@ export function useDeleteArea() {
       withMock(true, () => deleteAreaApi(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-areas"] })
+    },
+  })
+}
+
+/* ───────── Admin Delivery Fee Configurations ───────── */
+
+const mockDeliveryFeeConfig: DeliveryFeeConfigurationResponse = {
+  id: 1,
+  originStateId: 1,
+  originAreaId: 1,
+  destinationStateId: 2,
+  destinationAreaId: 2,
+  minWeightGrams: 0,
+  maxWeightGrams: 5000,
+  fee: 1500,
+  cap: 3000,
+  priority: 1,
+}
+
+export function useAllDeliveryFeeConfigs() {
+  return useQuery({
+    queryKey: ["admin-delivery-fee-configs", "all"],
+    queryFn: () => withMock([mockDeliveryFeeConfig], () => getAllDeliveryFeeConfigsApi()),
+  })
+}
+
+export function useDeliveryFeeConfigById(id: number) {
+  return useQuery({
+    queryKey: ["admin-delivery-fee-configs", id],
+    queryFn: () => withMock(mockDeliveryFeeConfig, () => getDeliveryFeeConfigByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useCreateDeliveryFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateDeliveryFeeConfigurationRequestDto) =>
+      withMock(mockDeliveryFeeConfig, () => createDeliveryFeeConfigApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-delivery-fee-configs"] })
+    },
+  })
+}
+
+export function useUpdateDeliveryFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateDeliveryFeeConfigurationRequestDto) =>
+      withMock(mockDeliveryFeeConfig, () => updateDeliveryFeeConfigApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-delivery-fee-configs"] })
+    },
+  })
+}
+
+export function useDeleteDeliveryFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteDeliveryFeeConfigApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-delivery-fee-configs"] })
+    },
+  })
+}
+
+/* ───────── Admin Platform Fee Configurations ───────── */
+
+const mockPlatformFeeConfig: PlatformFeeConfigResponse = {
+  id: 1,
+  markupPercent: 15,
+  markupCap: 5000,
+  commissionPercent: 10,
+  commissionCap: 2000,
+  isActive: true,
+  effectiveFrom: new Date().toISOString(),
+  effectiveTo: null,
+  dateCreated: new Date().toISOString(),
+}
+
+export function useActivePlatformFeeConfig() {
+  return useQuery({
+    queryKey: ["admin-platform-fee-configs", "active"],
+    queryFn: () => withMock(mockPlatformFeeConfig, () => getActivePlatformFeeConfigApi()),
+  })
+}
+
+export function useAllPlatformFeeConfigs() {
+  return useQuery({
+    queryKey: ["admin-platform-fee-configs", "all"],
+    queryFn: () => withMock([mockPlatformFeeConfig], () => getAllPlatformFeeConfigsApi()),
+  })
+}
+
+export function usePlatformFeeConfigById(id: number) {
+  return useQuery({
+    queryKey: ["admin-platform-fee-configs", id],
+    queryFn: () => withMock(mockPlatformFeeConfig, () => getPlatformFeeConfigByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useCreatePlatformFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreatePlatformFeeConfigRequestDto) =>
+      withMock(mockPlatformFeeConfig, () => createPlatformFeeConfigApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-platform-fee-configs"] })
+    },
+  })
+}
+
+export function useUpdatePlatformFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdatePlatformFeeConfigRequestDto) =>
+      withMock(mockPlatformFeeConfig, () => updatePlatformFeeConfigApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-platform-fee-configs"] })
+    },
+  })
+}
+
+export function useDeletePlatformFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deletePlatformFeeConfigApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-platform-fee-configs"] })
     },
   })
 }
