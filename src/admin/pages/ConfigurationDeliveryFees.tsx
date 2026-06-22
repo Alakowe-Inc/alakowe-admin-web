@@ -107,9 +107,11 @@ export default function ConfigurationDeliveryFees() {
 
     try {
       if (editing?.id) {
+        form.fee = Math.round(form.fee * 100); // Ensure fee is not null for update
         await updateMutation.mutateAsync(asUpdatePayload(editing.id, form));
         toast("Delivery fee configuration updated");
       } else {
+        form.fee = Math.round(form.fee * 100);
         await createMutation.mutateAsync(form);
         toast("Delivery fee configuration created");
       }
@@ -175,7 +177,7 @@ export default function ConfigurationDeliveryFees() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <div className="font-semibold text-foreground">{c.fee ?? 0}</div>
+                      <div className="font-semibold text-foreground">{(c.fee ?? 0)/100}</div>
                     </td>
                     <td className="px-5 py-3">
                       <div className="text-xs text-muted-foreground">
