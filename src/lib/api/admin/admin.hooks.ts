@@ -36,6 +36,22 @@ import {
   getPlatformFeeConfigByIdApi,
   getAllPlatformFeeConfigsApi,
   getActivePlatformFeeConfigApi,
+  createTagApi,
+  updateTagApi,
+  deleteTagApi,
+  getAllTagsApi,
+  getTagsByCategoryApi,
+  createCollectionApi,
+  updateCollectionApi,
+  deleteCollectionApi,
+  getAllCollectionsApi,
+  assignListingsToCollectionApi,
+  removeListingsFromCollectionApi,
+  updateCollectionPriorityApi,
+  createLandingPageSectionApi,
+  updateLandingPageSectionApi,
+  deleteLandingPageSectionApi,
+  getLandingPageApi,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -60,6 +76,18 @@ import type {
   CreatePlatformFeeConfigRequestDto,
   UpdatePlatformFeeConfigRequestDto,
   PlatformFeeConfigResponse,
+  AddTagRequestDto,
+  UpdateTagRequestDto,
+  TagResponse,
+  AddCollectionRequestDto,
+  UpdateCollectionRequestDto,
+  CollectionResponse,
+  AssignListingsToCollectionDto,
+  RemoveListingsFromCollectionDto,
+  UpdateCollectionPriorityDto,
+  AddLandingPageSectionRequestDto,
+  UpdateLandingPageSectionRequestDto,
+  LandingPageSectionResponse,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -463,6 +491,185 @@ export function useDeletePlatformFeeConfig() {
       withMock(true, () => deletePlatformFeeConfigApi(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-platform-fee-configs"] })
+    },
+  })
+}
+
+/* ───────── Admin Tags ───────── */
+
+const mockTag: TagResponse = { id: 1, name: "Mock Tag", slug: "mock-tag", categoryId: null, categoryName: null }
+
+export function useAllTags() {
+  return useQuery({
+    queryKey: ["admin-tags", "all"],
+    queryFn: () => withMock([mockTag], () => getAllTagsApi()),
+  })
+}
+
+export function useTagsByCategory(categoryId: number) {
+  return useQuery({
+    queryKey: ["admin-tags", "by-category", categoryId],
+    queryFn: () => withMock([mockTag], () => getTagsByCategoryApi(categoryId)),
+    enabled: !!categoryId,
+  })
+}
+
+export function useCreateTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddTagRequestDto) =>
+      withMock(mockTag, () => createTagApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tags"] })
+    },
+  })
+}
+
+export function useUpdateTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateTagRequestDto) =>
+      withMock(mockTag, () => updateTagApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tags"] })
+    },
+  })
+}
+
+export function useDeleteTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteTagApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tags"] })
+    },
+  })
+}
+
+/* ───────── Admin Collections ───────── */
+
+const mockCollection: CollectionResponse = {
+  id: 1, name: "Mock Collection", slug: "mock-collection",
+  description: "A mock collection", isActive: true,
+}
+
+export function useAllCollections() {
+  return useQuery({
+    queryKey: ["admin-collections", "all"],
+    queryFn: () => withMock([mockCollection], () => getAllCollectionsApi()),
+  })
+}
+
+export function useCreateCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddCollectionRequestDto) =>
+      withMock(mockCollection, () => createCollectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useUpdateCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateCollectionRequestDto) =>
+      withMock(mockCollection, () => updateCollectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useDeleteCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteCollectionApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useAssignListingsToCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AssignListingsToCollectionDto) =>
+      withMock(true, () => assignListingsToCollectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useRemoveListingsFromCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: RemoveListingsFromCollectionDto) =>
+      withMock(true, () => removeListingsFromCollectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useUpdateCollectionPriority() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateCollectionPriorityDto) =>
+      withMock(true, () => updateCollectionPriorityApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+/* ───────── Admin Landing Page ───────── */
+
+const mockLandingPageSection: LandingPageSectionResponse = {
+  id: 1, title: "Mock Section", sectionType: "category",
+  filterParam: { category: "fiction" }, listings: [],
+}
+
+export function useLandingPage() {
+  return useQuery({
+    queryKey: ["admin-landing-page"],
+    queryFn: () => withMock({ sections: [] }, () => getLandingPageApi()),
+  })
+}
+
+export function useCreateLandingPageSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddLandingPageSectionRequestDto) =>
+      withMock(mockLandingPageSection, () => createLandingPageSectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-landing-page"] })
+    },
+  })
+}
+
+export function useUpdateLandingPageSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateLandingPageSectionRequestDto) =>
+      withMock(mockLandingPageSection, () => updateLandingPageSectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-landing-page"] })
+    },
+  })
+}
+
+export function useDeleteLandingPageSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteLandingPageSectionApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-landing-page"] })
     },
   })
 }

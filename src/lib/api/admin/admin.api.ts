@@ -23,6 +23,18 @@ import type {
   CreatePlatformFeeConfigRequestDto,
   UpdatePlatformFeeConfigRequestDto,
   PlatformFeeConfigResponse,
+  AddTagRequestDto,
+  UpdateTagRequestDto,
+  TagResponse,
+  AddCollectionRequestDto,
+  UpdateCollectionRequestDto,
+  CollectionResponse,
+  AssignListingsToCollectionDto,
+  RemoveListingsFromCollectionDto,
+  UpdateCollectionPriorityDto,
+  AddLandingPageSectionRequestDto,
+  UpdateLandingPageSectionRequestDto,
+  LandingPageSectionResponse,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -225,11 +237,88 @@ export async function getActivePlatformFeeConfigApi(): Promise<PlatformFeeConfig
   return data as PlatformFeeConfigResponse
 }
 
-// export type {
-//   AddStateRequestDto,
-//   UpdateStateRequestDto,
-//   StateResponse,
-//   AddAreaRequestDto,
-//   UpdateAreaRequestDto,
-//   AreaResponse,
-// } from "../types"
+/* ───────── Admin Tags ───────── */
+
+export async function createTagApi(body: AddTagRequestDto): Promise<TagResponse> {
+  const { data } = await client.post("/api/v1/AdminTag/create", body)
+  return data as TagResponse
+}
+
+export async function updateTagApi(body: UpdateTagRequestDto): Promise<TagResponse> {
+  const { data } = await client.post("/api/v1/AdminTag/update", body)
+  return data as TagResponse
+}
+
+export async function deleteTagApi(id: number): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/AdminTag/delete/${id}`)
+  return data as boolean
+}
+
+export async function getAllTagsApi(): Promise<TagResponse[]> {
+  const { data } = await client.get("/api/v1/AdminTag/all")
+  return data as TagResponse[]
+}
+
+export async function getTagsByCategoryApi(categoryId: number): Promise<TagResponse[]> {
+  const { data } = await client.get(`/api/v1/AdminTag/by-category/${categoryId}`)
+  return data as TagResponse[]
+}
+
+/* ───────── Admin Collections ───────── */
+
+export async function createCollectionApi(body: AddCollectionRequestDto): Promise<CollectionResponse> {
+  const { data } = await client.post("/api/v1/AdminCollection/create", body)
+  return data as CollectionResponse
+}
+
+export async function updateCollectionApi(body: UpdateCollectionRequestDto): Promise<CollectionResponse> {
+  const { data } = await client.post("/api/v1/AdminCollection/update", body)
+  return data as CollectionResponse
+}
+
+export async function deleteCollectionApi(id: number): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/AdminCollection/delete/${id}`)
+  return data as boolean
+}
+
+export async function getAllCollectionsApi(): Promise<CollectionResponse[]> {
+  const { data } = await client.get("/api/v1/AdminCollection/all")
+  return data as CollectionResponse[]
+}
+
+export async function assignListingsToCollectionApi(body: AssignListingsToCollectionDto): Promise<boolean> {
+  const { data } = await client.post("/api/v1/AdminCollection/assign-listings", body)
+  return data as boolean
+}
+
+export async function removeListingsFromCollectionApi(body: RemoveListingsFromCollectionDto): Promise<boolean> {
+  const { data } = await client.post("/api/v1/AdminCollection/remove-listings", body)
+  return data as boolean
+}
+
+export async function updateCollectionPriorityApi(body: UpdateCollectionPriorityDto): Promise<boolean> {
+  const { data } = await client.post("/api/v1/AdminCollection/update-priority", body)
+  return data as boolean
+}
+
+/* ───────── Admin Landing Page ───────── */
+
+export async function createLandingPageSectionApi(body: AddLandingPageSectionRequestDto): Promise<LandingPageSectionResponse> {
+  const { data } = await client.post("/api/v1/AdminLandingPage/create", body)
+  return data as LandingPageSectionResponse
+}
+
+export async function updateLandingPageSectionApi(body: UpdateLandingPageSectionRequestDto): Promise<LandingPageSectionResponse> {
+  const { data } = await client.post("/api/v1/AdminLandingPage/update", body)
+  return data as LandingPageSectionResponse
+}
+
+export async function deleteLandingPageSectionApi(id: number): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/AdminLandingPage/delete/${id}`)
+  return data as boolean
+}
+
+export async function getLandingPageApi(): Promise<any> {
+  const { data } = await client.get("/api/v1/LandingPage/landing-page")
+  return data
+}
