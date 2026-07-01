@@ -27,6 +27,10 @@ import ListingDetail from "@/admin/pages/ListingDetail";
 import PickupDetail from "@/admin/pages/PickupDetail";
 import ConfigurationDeliveryFees from "@/admin/pages/ConfigurationDeliveryFees";
 import ConfigurationPlatformFees from "@/admin/pages/ConfigurationPlatformFees";
+import CatalogueCategories from "@/admin/pages/CatalogueCategories";
+import CatalogueTags from "@/admin/pages/CatalogueTags";
+import CatalogueCollections from "@/admin/pages/CatalogueCollections";
+import CatalogueLandingPage from "@/admin/pages/CatalogueLandingPage";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +78,12 @@ const App = () => (
             path="/admin/configuration/platform-fees"
             element={adminWrap(<ConfigurationPlatformFees />)}
           />
+
+          <Route path="/admin/catalogue" element={<Navigate to="/admin/catalogue/categories" replace />} />
+          <Route path="/admin/catalogue/categories" element={adminWrap(<CatalogueCategories />)} />
+          <Route path="/admin/catalogue/tags" element={adminWrap(<CatalogueTags />)} />
+          <Route path="/admin/catalogue/collections" element={adminWrap(<CatalogueCollections />)} />
+          <Route path="/admin/catalogue/landing-page" element={adminWrap(<CatalogueLandingPage />)} />
 
           <Route path="/admin/configuration" element={<Navigate to="/admin/configuration/platform-fees" replace />} />
           <Route path="/admin/insights" element={<Navigate to="/admin/dashboard" replace />} />

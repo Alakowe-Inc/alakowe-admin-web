@@ -17,6 +17,9 @@ import {
   ArrowLeft,
   LogOut,
   Coins,
+  Tag,
+  LayoutList,
+  Layers,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "./Logo"
@@ -44,6 +47,12 @@ const items = [
   // Configuration group
   { label: "Delivery Fees", to: "/admin/configuration/delivery-fees", icon: Truck },
   { label: "Platform Fees", to: "/admin/configuration/platform-fees", icon: Coins },
+
+  // Catalogue & Discovery group
+  { label: "Categories", to: "/admin/catalogue/categories", icon: Layers },
+  { label: "Tags", to: "/admin/catalogue/tags", icon: Tag },
+  { label: "Collections", to: "/admin/catalogue/collections", icon: LayoutList },
+  { label: "Landing Page", to: "/admin/catalogue/landing-page", icon: LayoutDashboard },
 ];
 
 interface SidebarProps {

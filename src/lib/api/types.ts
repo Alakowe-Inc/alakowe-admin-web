@@ -37,10 +37,12 @@ export interface ChangePasswordRequestDto {
 
 export interface AddCategoryRequestDto {
   name?: string | null
+  slug?: string | null
 }
 
 export interface UpdateCategoryRequestDto {
   name?: string | null
+  slug?: string | null
   id?: number
 }
 
@@ -104,6 +106,7 @@ export interface ListingResponsePagedResult {
 export interface CategoryResponse {
   id?: number
   name?: string | null
+  slug?: string | null
 }
 
 export interface AddStateRequestDto {
@@ -192,4 +195,96 @@ export interface PlatformFeeConfigResponse {
   effectiveFrom?: string
   effectiveTo?: string | null
   dateCreated?: string
+}
+
+/* ───────── Catalogue & Discovery: Tags ───────── */
+
+export interface AddTagRequestDto {
+  name?: string | null
+  slug?: string | null
+  categoryId?: number | null
+}
+
+export interface UpdateTagRequestDto {
+  id?: number
+  name?: string | null
+  slug?: string | null
+  categoryId?: number | null
+}
+
+export interface TagResponse {
+  id?: number
+  name?: string | null
+  slug?: string | null
+  categoryId?: number | null
+  categoryName?: string | null
+}
+
+/* ───────── Catalogue & Discovery: Collections ───────── */
+
+export interface AddCollectionRequestDto {
+  name?: string | null
+  slug?: string | null
+  description?: string | null
+}
+
+export interface UpdateCollectionRequestDto {
+  id?: number
+  name?: string | null
+  slug?: string | null
+  description?: string | null
+}
+
+export interface CollectionResponse {
+  id?: number
+  name?: string | null
+  slug?: string | null
+  description?: string | null
+  isActive?: boolean
+}
+
+export interface AssignListingDto {
+  listingId?: number
+  priority?: number | null
+}
+
+export interface AssignListingsToCollectionDto {
+  collectionId?: number
+  listings?: AssignListingDto[] | null
+}
+
+export interface RemoveListingsFromCollectionDto {
+  collectionId?: number
+  listingIds?: number[] | null
+}
+
+export interface UpdateCollectionPriorityDto {
+  collectionId?: number
+  listingId?: number
+  priority?: number
+}
+
+/* ───────── Catalogue & Discovery: Landing Page ───────── */
+
+export type LandingPageSectionType = "Category" | "Collection" | "Tag"
+
+export interface AddLandingPageSectionRequestDto {
+  displayOrder?: number
+  sectionType?: LandingPageSectionType
+  referenceId?: number
+  titleOverride?: string | null
+}
+
+export interface UpdateLandingPageSectionRequestDto {
+  id?: number
+  displayOrder?: number
+  titleOverride?: string | null
+}
+
+export interface LandingPageSectionResponse {
+  id?: number
+  title?: string | null
+  sectionType?: string | null
+  filterParam?: any
+  listings?: ListingResponse[] | null
 }
