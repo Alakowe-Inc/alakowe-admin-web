@@ -322,3 +322,214 @@ export async function getLandingPageApi(): Promise<any> {
   const { data } = await client.get("/api/v1/LandingPage/landing-page")
   return data
 }
+
+/* ───────── Optional Speedaf logistics ───────── */
+
+export interface ShipmentDto {
+  id: number
+  orderId: number
+  leg: string
+  carrier: string
+  status: string
+  speedafBillCode?: string
+  customerOrderNo?: string
+  labelUrl?: string
+  pickupType: number
+  senderName?: string
+  receiverName?: string
+  lastTrackAction?: string
+  lastTrackMessage?: string
+  lastTrackAt?: string
+  bookedAt?: string
+  speedafStationName?: string
+  trackEvents?: Array<{
+    action?: string
+    actionName?: string
+    message?: string
+    messageEng?: string
+    eventTime?: string
+    source: string
+  }>
+}
+
+export interface AdminOrderPartyDto {
+  id?: string
+  name: string
+  email?: string
+  phone?: string
+  address?: string
+  verified: boolean
+}
+
+export interface AdminOrderPaymentDto {
+  method: string
+  reference?: string
+  status?: string
+  channel?: string
+  paidAt?: string
+}
+
+export interface AdminOrderItemDto {
+  id: number
+  listingId: number
+  title: string
+  author?: string
+  category?: string
+  format?: string
+  condition?: string
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  buyerPrice: number
+  sellerPayout: number
+  platformFee: number
+  coverImageUrl?: string
+}
+
+export interface AdminOrderDto {
+  id: number
+  orderNumber: string
+  status: string
+  amount: number
+  baseAmount: number
+  deliveryFee?: number
+  sellerPayout: number
+  platformFee: number
+  markupTotal: number
+  commissionTotal: number
+  isSettled: boolean
+  settledAt?: string
+  date: string
+  paymentDate?: string
+  shippedDate?: string
+  deliveredDate?: string
+  delivery: "Pickup" | "Drop-off" | "Courier" | string
+  shippingAddress?: string
+  preferredSpeedafStationId?: number | null
+  preferredSpeedafStationName?: string | null
+  preferredSpeedafStationAddress?: string | null
+  preferredSpeedafStationCity?: string | null
+  sellerDropoffScheduledAt?: string | null
+  buyer: AdminOrderPartyDto
+  seller: AdminOrderPartyDto
+  payment: AdminOrderPaymentDto
+  items: AdminOrderItemDto[]
+  activity: Array<{ ts: string; text: string }>
+  shipments: ShipmentDto[]
+}
+
+export interface OrderShipmentsDto {
+  orderId: number
+  orderStatus: string
+  usesSpeedaf: boolean
+  preferredSpeedafStationId?: number | null
+  preferredSpeedafStationName?: string | null
+  preferredSpeedafStationAddress?: string | null
+  preferredSpeedafStationCity?: string | null
+  sellerDropoffScheduledAt?: string | null
+  shipments: ShipmentDto[]
+}
+
+export async function getAdminOrdersApi(): Promise<AdminOrderDto[]> {
+  const { data } = await client.get("/api/v1/admin/orders")
+  return data as AdminOrderDto[]
+}
+
+export async function getAdminOrderApi(orderNumber: string): Promise<AdminOrderDto> {
+  const { data } = await client.get(`/api/v1/admin/orders/${encodeURIComponent(orderNumber)}`)
+  return data as AdminOrderDto
+}
+
+export async function updateAdminOrderStatusApi(orderNumber: string, status: string, note?: string): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admin/orders/${encodeURIComponent(orderNumber)}/status`, { status, note })
+  return data as boolean
+}
+
+export async function getOrderShipmentsApi(orderId: number): Promise<OrderShipmentsDto> {
+  const { data } = await client.get(`/api/v1/admin/logistics/orders/${orderId}/shipments`)
+  return data as OrderShipmentsDto
+}
+
+export async function getOrderShipmentsByNumberApi(orderNumber: string): Promise<OrderShipmentsDto> {
+  const { data } = await client.get(`/api/v1/admin/logistics/orders/by-number/${encodeURIComponent(orderNumber)}/shipments`)
+  return data as OrderShipmentsDto
+}
+
+export async function initiateInboundShipmentApi(
+  orderId: number,
+  body: {
+    sellerPhone?: string
+    sellerName?: string
+    sellerAddress?: string
+    sellerProvince?: string
+    sellerCity?: string
+    sellerDistrict?: string
+    parcelWeightKg?: number
+    speedafStationId?: number
+    remark?: string
+  } = {},
+): Promise<ShipmentDto> {
+  const { data } = await client.post(`/api/v1/admin/logistics/orders/${orderId}/shipments/inbound`, body)
+  return data as ShipmentDto
+}
+
+export async function initiateInboundShipmentByNumberApi(
+  orderNumber: string,
+  body: {
+    sellerPhone?: string
+    sellerName?: string
+    sellerAddress?: string
+    sellerProvince?: string
+    sellerCity?: string
+    sellerDistrict?: string
+    parcelWeightKg?: number
+    speedafStationId?: number
+    remark?: string
+  } = {},
+): Promise<ShipmentDto> {
+  const { data } = await client.post(
+    `/api/v1/admin/logistics/orders/by-number/${encodeURIComponent(orderNumber)}/shipments/inbound`,
+    body,
+  )
+  return data as ShipmentDto
+}
+
+export async function initiateOutboundShipmentApi(
+  orderId: number,
+  body: { parcelWeightKg?: number; speedafStationId?: number; remark?: string } = {},
+): Promise<ShipmentDto> {
+  const { data } = await client.post(`/api/v1/admin/logistics/orders/${orderId}/shipments/outbound`, body)
+  return data as ShipmentDto
+}
+
+export async function initiateOutboundShipmentByNumberApi(
+  orderNumber: string,
+  body: { parcelWeightKg?: number; speedafStationId?: number; remark?: string } = {},
+): Promise<ShipmentDto> {
+  const { data } = await client.post(
+    `/api/v1/admin/logistics/orders/by-number/${encodeURIComponent(orderNumber)}/shipments/outbound`,
+    body,
+  )
+  return data as ShipmentDto
+}
+
+export async function markOrderLogisticsStatusApi(orderId: number, status: string, note?: string): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admin/logistics/orders/${orderId}/status`, { status, note })
+  return data as boolean
+}
+
+export interface SpeedafStationDto {
+  id: number
+  siteName: string
+  siteMode: string
+  city: string
+  area: string
+  address: string
+  contactPhone: string
+  region: string
+}
+
+export async function getAdminSpeedafStationsApi(city?: string): Promise<SpeedafStationDto[]> {
+  const { data } = await client.get("/api/v1/admin/logistics/stations", { params: { city } })
+  return data as SpeedafStationDto[]
+}

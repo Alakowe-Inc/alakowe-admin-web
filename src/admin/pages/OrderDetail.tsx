@@ -2,14 +2,12 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft, MapPin, CreditCard, Truck, Calendar, MoreHorizontal, Zap,
-  Package, BookOpen, User, Mail, Phone, ShieldCheck, Hash, Check,
+  Package, User, Mail, Phone, ShieldCheck, Hash, Check,
 } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { AdminNotes } from "@/admin/components/AdminNotes";
 import { Button } from "@/components/ui/button";
-import { useAdminStore } from "@/admin/store/adminStore";
-import { COVER_IMAGES } from "@/lib/covers";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -17,22 +15,38 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "react-toastify";
-import type { Order } from "@/lib/mock-data";
+import { SpeedafLogisticsPanel } from "@/admin/components/SpeedafLogisticsPanel";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getAdminOrderApi, updateAdminOrderStatusApi } from "@/lib/api/admin/admin.api";
+import { moneyInNaira } from "@/lib/utils";
 
-const STATUSES: Order["status"][] = ["Pending", "Confirmed", "Paid", "Processing", "Dispatched", "In Transit", "Shipped", "Delivered", "Cancelled"];
+const STATUSES = [
+  "Pending",
+  "Confirmed",
+  "AwaitingInbound",
+  "InboundBooked",
+  "InTransitToHub",
+  "AtHub",
+  "Sorted",
+  "OutboundBooked",
+  "OutForDelivery",
+  "Shipped",
+  "Delivered",
+  "Cancelled",
+] as const;
 
-type Step = { key: string; label: string; matches: Order["status"][] };
+type Step = { key: string; label: string; matches: string[] };
 const STEPS: Step[] = [
-  { key: "payment", label: "Payment Received", matches: ["Paid", "Confirmed", "Processing", "Dispatched", "In Transit", "Shipped", "Delivered"] },
-  { key: "awaiting", label: "Awaiting Seller Action", matches: ["Confirmed", "Processing", "Dispatched", "In Transit", "Shipped", "Delivered"] },
-  { key: "scheduled", label: "Drop-off Scheduled", matches: ["Processing", "Dispatched", "In Transit", "Shipped", "Delivered"] },
-  { key: "dropped", label: "Dropped Off", matches: ["Processing", "Dispatched", "In Transit", "Shipped", "Delivered"] },
-  { key: "processing", label: "Processing", matches: ["Processing", "Dispatched", "In Transit", "Shipped", "Delivered"] },
-  { key: "dispatched", label: "Dispatched", matches: ["Dispatched", "In Transit", "Shipped", "Delivered"] },
+  { key: "payment", label: "Payment Received", matches: ["Paid", "Confirmed", "AwaitingInbound", "InboundBooked", "InTransitToHub", "AtHub", "Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
+  { key: "awaiting", label: "Awaiting Seller Action", matches: ["Confirmed", "AwaitingInbound", "InboundBooked", "InTransitToHub", "AtHub", "Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
+  { key: "scheduled", label: "Inbound Booked", matches: ["InboundBooked", "InTransitToHub", "AtHub", "Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
+  { key: "dropped", label: "At Alakowe Hub", matches: ["AtHub", "Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
+  { key: "processing", label: "Sorted", matches: ["Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
+  { key: "dispatched", label: "Outbound", matches: ["OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
   { key: "delivered", label: "Delivered", matches: ["Delivered"] },
 ];
 
-function currentStepIndex(status: Order["status"]) {
+function currentStepIndex(status: string) {
   if (status === "Cancelled") return -1;
   let last = 0;
   STEPS.forEach((s, i) => { if (s.matches.includes(status)) last = i; });
@@ -40,19 +54,40 @@ function currentStepIndex(status: Order["status"]) {
 }
 
 export default function OrderDetail() {
-  const { id } = useParams();
+  const { id: orderNumberParam } = useParams();
   const navigate = useNavigate();
-  const order = useAdminStore((s) => s.orders.find((o) => o.id === id));
-  const listing = useAdminStore((s) => s.listings.find((l) => l.title === order?.book));
-  const buyer = useAdminStore((s) => s.users.find((u) => u.name === order?.buyer));
-  const seller = useAdminStore((s) => s.users.find((u) => u.name === order?.seller));
-  const setStatus = useAdminStore((s) => s.setOrderStatus);
-  const forceUpdate = useAdminStore((s) => s.forceUpdateOrder);
-  const [next, setNext] = useState<Order["status"] | "">("");
+  const queryClient = useQueryClient();
+  const orderNumber = orderNumberParam ? decodeURIComponent(orderNumberParam) : "";
+  const { data: order, isLoading, error, refetch } = useQuery({
+    queryKey: ["admin-order", orderNumber],
+    queryFn: () => getAdminOrderApi(orderNumber),
+    enabled: !!orderNumber,
+  });
+  const updateStatus = useMutation({
+    mutationFn: ({ status, force }: { status: string; force?: boolean }) =>
+      updateAdminOrderStatusApi(orderNumber, status, force ? "Force update from admin dashboard" : undefined),
+    onSuccess: async () => {
+      toast("Order updated");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-order", orderNumber] }),
+      ]);
+    },
+  });
+  const [next, setNext] = useState<string>("");
 
   const stepIdx = useMemo(() => order ? currentStepIndex(order.status) : 0, [order]);
 
-  if (!order) {
+  if (isLoading) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <Button variant="outline" onClick={() => navigate("/admin/orders")} className="gap-1.5"><ArrowLeft className="h-4 w-4" /> Back</Button>
+        <PageCard title="Loading order" description="Fetching order details..." />
+      </div>
+    );
+  }
+
+  if (error || !order) {
     return (
       <div className="space-y-4 animate-fade-in">
         <Button variant="outline" onClick={() => navigate("/admin/orders")} className="gap-1.5"><ArrowLeft className="h-4 w-4" /> Back</Button>
@@ -61,15 +96,11 @@ export default function OrderDetail() {
     );
   }
 
-  const cover = COVER_IMAGES[order.book];
-  const sellerPrice = listing?.price ?? Math.round(order.amount / 1.15);
-  const listingPrice = Math.round(sellerPrice * 1.15);
-  const sellerPayout = Math.round(sellerPrice * 0.85);
+  const items = order.items ?? [];
 
   const apply = (force: boolean) => {
     if (!next) return;
-    (force ? forceUpdate : setStatus)(order.id, next);
-    toast(force ? "Order force-updated" : "Order updated");
+    updateStatus.mutate({ status: next, force });
     setNext("");
   };
 
@@ -81,24 +112,24 @@ export default function OrderDetail() {
           <ArrowLeft className="h-4 w-4" /> Back to Orders
         </Button>
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={next} onValueChange={(v) => setNext(v as Order["status"])}>
+          <Select value={next} onValueChange={setNext}>
             <SelectTrigger className="h-9 w-[180px] rounded-xl"><SelectValue placeholder="Change status…" /></SelectTrigger>
             <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
-          <Button onClick={() => apply(false)} disabled={!next}>Update Status</Button>
+          <Button onClick={() => apply(false)} disabled={!next || updateStatus.isPending}>Update Status</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl"><MoreHorizontal className="h-4 w-4" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => apply(true)} disabled={!next}>
+              <DropdownMenuItem onClick={() => apply(true)} disabled={!next || updateStatus.isPending}>
                 <Zap className="mr-2 h-4 w-4" /> Force Update
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => toast("Invoice resent")}>Resend Invoice</DropdownMenuItem>
               <DropdownMenuItem onClick={() => toast("Buyer notified")}>Contact Buyer</DropdownMenuItem>
               <DropdownMenuItem onClick={() => toast("Seller notified")}>Contact Seller</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive" onClick={() => { setStatus(order.id, "Cancelled"); toast("Order cancelled"); }}>
+              <DropdownMenuItem className="text-destructive" onClick={() => updateStatus.mutate({ status: "Cancelled", force: true })}>
                 Cancel Order
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -111,7 +142,7 @@ export default function OrderDetail() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <h2 className="font-display text-xl font-bold text-foreground">Order {order.id}</h2>
+              <h2 className="font-display text-xl font-bold text-foreground">Order {order.orderNumber}</h2>
               <StatusBadge status={order.status} />
             </div>
             <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -120,7 +151,7 @@ export default function OrderDetail() {
           </div>
           <div className="text-right">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Order Total</p>
-            <p className="font-display text-2xl font-bold text-foreground">₦{order.amount.toLocaleString()}</p>
+            <p className="font-display text-2xl font-bold text-foreground">₦{moneyInNaira(order.amount).toLocaleString()}</p>
           </div>
         </div>
 
@@ -164,52 +195,63 @@ export default function OrderDetail() {
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Left col - 2 wide */}
         <div className="space-y-5 lg:col-span-2">
-          {/* Book Details */}
-          <PageCard title="Book Details" description="Product information for this order">
-            <div className="flex flex-col gap-5 sm:flex-row">
-              {cover ? (
-                <img src={cover} alt={order.book} className="aspect-[3/4] w-full max-w-[160px] rounded-xl object-cover shadow-soft" />
-              ) : (
-                <div className="aspect-[3/4] w-full max-w-[160px] rounded-xl bg-muted" />
-              )}
-              <div className="flex-1 space-y-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Title</p>
-                  <p className="font-display text-lg font-bold text-foreground">{order.book}</p>
-                  <p className="text-sm text-muted-foreground">by {listing?.author ?? "Unknown author"}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <Field label="Category" value={listing?.category ?? "—"} />
-                  <Field label="Format" value={listing?.format ?? "Paperback"} />
-                  <Field label="Quantity" value={String(listing?.quantity ?? 1)} />
-                  <Field label="Condition" value={listing?.condition ?? "—"} />
-                </div>
-                <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/60 bg-muted/30 p-3">
-                  <Money label="Seller Price" value={sellerPrice} />
-                  <Money label="Listing Price" value={listingPrice} note="+15%" />
-                  <Money label="Seller Payout" value={sellerPayout} note="-15%" tone="success" />
-                </div>
+          {/* Order items */}
+          <PageCard
+            title={items.length === 1 ? "Book Details" : `Books (${items.length})`}
+            description={items.length === 1 ? "Product information for this order" : "Line items in this order"}
+          >
+            {items.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No items on this order.</p>
+            ) : (
+              <div className="space-y-5">
+                {items.map((item) => (
+                  <div key={item.id} className="flex flex-col gap-5 sm:flex-row sm:border-b sm:border-border/50 sm:pb-5 last:sm:border-0 last:sm:pb-0">
+                    {item.coverImageUrl ? (
+                      <img src={item.coverImageUrl} alt={item.title} className="aspect-[3/4] w-full max-w-[140px] rounded-xl object-cover shadow-soft" />
+                    ) : (
+                      <div className="aspect-[3/4] w-full max-w-[140px] rounded-xl bg-muted" />
+                    )}
+                    <div className="flex-1 space-y-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Title</p>
+                        <p className="font-display text-lg font-bold text-foreground">{item.title}</p>
+                        <p className="text-sm text-muted-foreground">by {item.author ?? "Unknown author"}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <Field label="Category" value={item.category ?? "—"} />
+                        <Field label="Format" value={item.format ?? "Paperback"} />
+                        <Field label="Quantity" value={String(item.quantity ?? 1)} />
+                        <Field label="Condition" value={item.condition ?? "—"} />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/60 bg-muted/30 p-3">
+                        <Money label="Unit Price" value={moneyInNaira(item.unitPrice)} />
+                        <Money label="Buyer Price" value={moneyInNaira(item.buyerPrice)} />
+                        <Money label="Seller Payout" value={moneyInNaira(item.sellerPayout)} tone="success" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </PageCard>
 
           {/* Buyer + Seller */}
           <div className="grid gap-5 md:grid-cols-2">
-            <PartyCard title="Buyer Information" name={order.buyer} email={buyer?.email} phone={buyer?.phone} address={order.shippingAddress} link={buyer ? `/admin/users/${buyer.id}` : undefined} verified={buyer?.verified} />
-            <PartyCard title="Seller Information" name={order.seller} email={seller?.email} phone={seller?.phone} address={seller?.address} link={seller ? `/admin/users/${seller.id}` : undefined} verified={seller?.verified} badge={seller?.rating ? `★ ${seller.rating}` : undefined} />
+            <PartyCard title="Buyer Information" name={order.buyer.name} email={order.buyer.email} phone={order.buyer.phone} address={order.shippingAddress ?? order.buyer.address} link={order.buyer.id ? `/admin/users/${order.buyer.id}` : undefined} verified={order.buyer.verified} />
+            <PartyCard title="Seller Information" name={order.seller.name} email={order.seller.email} phone={order.seller.phone} address={order.seller.address} link={order.seller.id ? `/admin/users/${order.seller.id}` : undefined} verified={order.seller.verified} />
           </div>
 
           {/* Payment + Delivery */}
           <div className="grid gap-5 md:grid-cols-2">
             <PageCard title="Payment Information">
               <ul className="space-y-2.5 text-sm">
-                <Row icon={CreditCard} label="Method" value="Paystack · ****4421" />
-                <Row icon={Hash} label="Transaction ID" value={`PSK-${order.id.slice(-6)}-${Math.abs(order.amount).toString(36).toUpperCase().slice(0,4)}`} />
-                <Row icon={Calendar} label="Payment Date" value={new Date(order.date).toLocaleString()} />
-                <Row icon={Package} label="Total Amount" value={`₦${order.amount.toLocaleString()}`} bold />
+                <Row icon={CreditCard} label="Method" value={order.payment.method ?? "Paystack"} />
+                <Row icon={Hash} label="Transaction ID" value={order.payment.reference ?? "—"} />
+                <Row icon={Calendar} label="Payment Date" value={new Date(order.payment.paidAt ?? order.paymentDate ?? order.date).toLocaleString()} />
+                <Row icon={Package} label="Total Amount" value={`₦${moneyInNaira(order.amount).toLocaleString()}`} bold />
                 <li className="flex items-center justify-between pt-1">
                   <span className="text-xs text-muted-foreground">Status</span>
-                  <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-[11px] font-semibold text-success ring-1 ring-success/20">Paid</span>
+                  <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-[11px] font-semibold text-success ring-1 ring-success/20">{order.payment.status ?? "Paid"}</span>
                 </li>
               </ul>
             </PageCard>
@@ -217,12 +259,27 @@ export default function OrderDetail() {
             <PageCard title="Delivery Information">
               <ul className="space-y-2.5 text-sm">
                 <Row icon={Truck} label="Method" value={order.delivery} />
-                <Row icon={Hash} label="Tracking" value={`GIG-${order.id.slice(-4)}`} />
+                <Row icon={Hash} label="Tracking" value={order.shippingAddress ? "See Speedaf panel if booked" : "—"} />
                 <Row icon={MapPin} label="Address" value={order.shippingAddress ?? "—"} />
-                <Row icon={Calendar} label="ETA" value="2 days" />
+                <Row icon={Calendar} label="Hub" value="14b Ikosi Road, Ketu, Lagos" />
               </ul>
             </PageCard>
           </div>
+
+          <SpeedafLogisticsPanel
+            orderNumber={order.orderNumber}
+            orderStatus={order.status}
+            sellerName={order.seller.name}
+            sellerPhone={order.seller.phone}
+            sellerAddress={order.seller.address}
+            preferredStationId={order.preferredSpeedafStationId}
+            preferredStationName={order.preferredSpeedafStationName}
+            preferredStationAddress={order.preferredSpeedafStationAddress}
+            preferredStationCity={order.preferredSpeedafStationCity}
+            sellerDropoffScheduledAt={order.sellerDropoffScheduledAt}
+            initialShipments={order.shipments}
+            onChanged={() => refetch()}
+          />
         </div>
 
         {/* Right col - sidebar */}
@@ -242,7 +299,7 @@ export default function OrderDetail() {
           </PageCard>
 
           {/* Admin Notes */}
-          <AdminNotes entityId={`order:${order.id}`} />
+          <AdminNotes entityId={`order:${order.orderNumber}`} />
         </div>
       </div>
     </div>

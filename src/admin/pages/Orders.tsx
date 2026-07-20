@@ -7,15 +7,31 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TimeRangeFilter, defaultRange, type RangeValue } from "@/admin/components/TimeRangeFilter";
 import { Paginator, usePaginated } from "@/admin/components/Paginator";
-import { useAdminStore } from "@/admin/store/adminStore";
 import { toast } from "react-toastify";
+import { useQuery } from "@tanstack/react-query";
+import { getAdminOrdersApi, type AdminOrderDto } from "@/lib/api/admin/admin.api";
+import { moneyInNaira } from "@/lib/utils";
 
-const STATUSES = ["All", "Pending", "Confirmed", "Processing", "Dispatched", "Delivered", "Cancelled"] as const;
+const STATUSES = ["All", "Pending", "Confirmed", "Processing", "AtHub", "OutboundBooked", "OutForDelivery", "Delivered", "Cancelled"] as const;
 const PAGE_SIZE = 8;
+
+function orderBooksLabel(order: AdminOrderDto): string {
+  const items = order.items ?? [];
+  if (items.length === 0) return "—";
+  if (items.length === 1) return items[0].title;
+  return `${items[0].title} + ${items.length - 1} more`;
+}
+
+function orderBooksSearchText(order: AdminOrderDto): string {
+  return (order.items ?? []).map((i) => i.title).join(" ");
+}
 
 export default function Orders() {
   const navigate = useNavigate();
-  const orders = useAdminStore((s) => s.orders);
+  const { data: orders = [], isLoading, error } = useQuery({
+    queryKey: ["admin-orders"],
+    queryFn: getAdminOrdersApi,
+  });
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<typeof STATUSES[number]>(
@@ -41,10 +57,11 @@ export default function Orders() {
     if (filter !== "All") {
       // Map "Processing" filter to multiple in-progress statuses
       if (filter === "Processing") {
-        if (!["Paid", "Processing", "In Transit", "Shipped"].includes(o.status)) return false;
+        if (!["Paid", "Processing", "In Transit", "Shipped", "AwaitingInbound", "InboundBooked", "InTransitToHub", "Sorted"].includes(o.status)) return false;
       } else if (o.status !== filter) return false;
     }
-    if (query && !`${o.id} ${o.buyer} ${o.seller} ${o.book}`.toLowerCase().includes(query.toLowerCase())) return false;
+    const searchable = `${o.orderNumber} ${o.buyer?.name ?? ""} ${o.seller?.name ?? ""} ${orderBooksSearchText(o)}`.toLowerCase();
+    if (query && !searchable.includes(query.toLowerCase())) return false;
     const d = new Date(o.date).getTime();
     if (d < range.from.getTime() || d > range.to.getTime()) return false;
     return true;
@@ -53,7 +70,7 @@ export default function Orders() {
   const paged = usePaginated(data, page, PAGE_SIZE);
 
   const exportCsv = () => {
-    const rows = [["Order", "Buyer", "Seller", "Book", "Amount", "Delivery", "Status", "Date"], ...data.map((o) => [o.id, o.buyer, o.seller, o.book, o.amount, o.delivery, o.status, o.date])];
+    const rows = [["Order", "Buyer", "Seller", "Books", "Amount", "Delivery", "Status", "Date"], ...data.map((o) => [o.orderNumber, o.buyer.name, o.seller.name, orderBooksLabel(o), moneyInNaira(o.amount), o.delivery, o.status, o.date])];
     const csv = rows.map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `orders-${Date.now()}.csv`; a.click();
@@ -78,7 +95,11 @@ export default function Orders() {
         </div>
       </div>
 
-      <PageCard title="All Orders" description={`${data.length} order${data.length === 1 ? "" : "s"} match your filters`} bodyClassName="p-0">
+      <PageCard
+        title="All Orders"
+        description={isLoading ? "Loading orders..." : `${data.length} order${data.length === 1 ? "" : "s"} match your filters`}
+        bodyClassName="p-0"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-card">
@@ -86,7 +107,7 @@ export default function Orders() {
                 <th className="px-5 py-3">Order</th>
                 <th className="px-5 py-3">Buyer</th>
                 <th className="px-5 py-3">Seller</th>
-                <th className="px-5 py-3">Book</th>
+                <th className="px-5 py-3">Books</th>
                 <th className="px-5 py-3">Amount</th>
                 <th className="px-5 py-3">Delivery</th>
                 <th className="px-5 py-3">Status</th>
@@ -95,24 +116,30 @@ export default function Orders() {
               </tr>
             </thead>
             <tbody>
+              {isLoading && (
+                <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-muted-foreground">Loading orders...</td></tr>
+              )}
+              {error && !isLoading && (
+                <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-destructive">Unable to load orders.</td></tr>
+              )}
               {paged.map((o) => (
-                <tr key={o.id} onClick={() => navigate(`/admin/orders/${o.id}`)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40">
-                  <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{o.id}</td>
-                  <td className="px-5 py-3 font-medium text-foreground">{o.buyer}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{o.seller}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{o.book}</td>
-                  <td className="px-5 py-3 font-semibold text-foreground">₦{o.amount.toLocaleString()}</td>
+                <tr key={o.orderNumber} onClick={() => navigate(`/admin/orders/${encodeURIComponent(o.orderNumber)}`)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40">
+                  <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{o.orderNumber}</td>
+                  <td className="px-5 py-3 font-medium text-foreground">{o.buyer.name}</td>
+                  <td className="px-5 py-3 text-muted-foreground">{o.seller.name}</td>
+                  <td className="px-5 py-3 text-muted-foreground">{orderBooksLabel(o)}</td>
+                  <td className="px-5 py-3 font-semibold text-foreground">₦{moneyInNaira(o.amount).toLocaleString()}</td>
                   <td className="px-5 py-3 text-muted-foreground">{o.delivery}</td>
                   <td className="px-5 py-3"><StatusBadge status={o.status} /></td>
-                  <td className="px-5 py-3 text-muted-foreground">{o.date}</td>
+                  <td className="px-5 py-3 text-muted-foreground">{new Date(o.date).toLocaleDateString()}</td>
                   <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                    <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => navigate(`/admin/orders/${o.id}`)}>
+                    <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => navigate(`/admin/orders/${encodeURIComponent(o.orderNumber)}`)}>
                       <Eye className="h-3.5 w-3.5" /> View
                     </Button>
                   </td>
                 </tr>
               ))}
-              {data.length === 0 && (
+              {!isLoading && !error && data.length === 0 && (
                 <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-muted-foreground">No orders match your filters.</td></tr>
               )}
             </tbody>
