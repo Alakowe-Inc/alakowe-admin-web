@@ -430,9 +430,21 @@ export interface OrderShipmentsDto {
   shipments: ShipmentDto[]
 }
 
-export async function getAdminOrdersApi(): Promise<AdminOrderDto[]> {
+export interface AdminOrderSummaryDto {
+  id: number
+  orderNumber: string
+  status: string
+  amount: number
+  delivery: "Pickup" | "Drop-off" | "Courier" | string
+  date: string
+  buyerName: string
+  sellerName: string
+  bookTitles: string[]
+}
+
+export async function getAdminOrdersApi(): Promise<AdminOrderSummaryDto[]> {
   const { data } = await client.get("/api/v1/admin/orders")
-  return data as AdminOrderDto[]
+  return data as AdminOrderSummaryDto[]
 }
 
 export async function getAdminOrderApi(orderNumber: string): Promise<AdminOrderDto> {
@@ -446,12 +458,12 @@ export async function updateAdminOrderStatusApi(orderNumber: string, status: str
 }
 
 export async function getOrderShipmentsApi(orderId: number): Promise<OrderShipmentsDto> {
-  const { data } = await client.get(`/api/v1/admin/logistics/orders/${orderId}/shipments`)
+  const { data } = await client.get(`/api/v1/admin/shipments/${orderId}`)
   return data as OrderShipmentsDto
 }
 
 export async function getOrderShipmentsByNumberApi(orderNumber: string): Promise<OrderShipmentsDto> {
-  const { data } = await client.get(`/api/v1/admin/logistics/orders/by-number/${encodeURIComponent(orderNumber)}/shipments`)
+  const { data } = await client.get(`/api/v1/admin/shipments/by-number/${encodeURIComponent(orderNumber)}`)
   return data as OrderShipmentsDto
 }
 
@@ -469,7 +481,7 @@ export async function initiateInboundShipmentApi(
     remark?: string
   } = {},
 ): Promise<ShipmentDto> {
-  const { data } = await client.post(`/api/v1/admin/logistics/orders/${orderId}/shipments/inbound`, body)
+  const { data } = await client.post(`/api/v1/admin/shipments/${orderId}/inbound`, body)
   return data as ShipmentDto
 }
 
@@ -488,7 +500,7 @@ export async function initiateInboundShipmentByNumberApi(
   } = {},
 ): Promise<ShipmentDto> {
   const { data } = await client.post(
-    `/api/v1/admin/logistics/orders/by-number/${encodeURIComponent(orderNumber)}/shipments/inbound`,
+    `/api/v1/admin/shipments/by-number/${encodeURIComponent(orderNumber)}/inbound`,
     body,
   )
   return data as ShipmentDto
@@ -498,7 +510,7 @@ export async function initiateOutboundShipmentApi(
   orderId: number,
   body: { parcelWeightKg?: number; speedafStationId?: number; remark?: string } = {},
 ): Promise<ShipmentDto> {
-  const { data } = await client.post(`/api/v1/admin/logistics/orders/${orderId}/shipments/outbound`, body)
+  const { data } = await client.post(`/api/v1/admin/shipments/${orderId}/outbound`, body)
   return data as ShipmentDto
 }
 
@@ -507,14 +519,14 @@ export async function initiateOutboundShipmentByNumberApi(
   body: { parcelWeightKg?: number; speedafStationId?: number; remark?: string } = {},
 ): Promise<ShipmentDto> {
   const { data } = await client.post(
-    `/api/v1/admin/logistics/orders/by-number/${encodeURIComponent(orderNumber)}/shipments/outbound`,
+    `/api/v1/admin/shipments/by-number/${encodeURIComponent(orderNumber)}/outbound`,
     body,
   )
   return data as ShipmentDto
 }
 
 export async function markOrderLogisticsStatusApi(orderId: number, status: string, note?: string): Promise<boolean> {
-  const { data } = await client.post(`/api/v1/admin/logistics/orders/${orderId}/status`, { status, note })
+  const { data } = await client.post(`/api/v1/admin/shipments/${orderId}/status`, { status, note })
   return data as boolean
 }
 
@@ -530,6 +542,6 @@ export interface SpeedafStationDto {
 }
 
 export async function getAdminSpeedafStationsApi(city?: string): Promise<SpeedafStationDto[]> {
-  const { data } = await client.get("/api/v1/admin/logistics/stations", { params: { city } })
+  const { data } = await client.get("/api/v1/admin/shipments/stations", { params: { city } })
   return data as SpeedafStationDto[]
 }

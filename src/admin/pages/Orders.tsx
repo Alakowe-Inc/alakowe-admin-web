@@ -9,21 +9,21 @@ import { TimeRangeFilter, defaultRange, type RangeValue } from "@/admin/componen
 import { Paginator, usePaginated } from "@/admin/components/Paginator";
 import { toast } from "react-toastify";
 import { useQuery } from "@tanstack/react-query";
-import { getAdminOrdersApi, type AdminOrderDto } from "@/lib/api/admin/admin.api";
+import { getAdminOrdersApi, type AdminOrderSummaryDto } from "@/lib/api/admin/admin.api";
 import { moneyInNaira } from "@/lib/utils";
 
 const STATUSES = ["All", "Pending", "Confirmed", "Processing", "AtHub", "OutboundBooked", "OutForDelivery", "Delivered", "Cancelled"] as const;
 const PAGE_SIZE = 8;
 
-function orderBooksLabel(order: AdminOrderDto): string {
-  const items = order.items ?? [];
-  if (items.length === 0) return "—";
-  if (items.length === 1) return items[0].title;
-  return `${items[0].title} + ${items.length - 1} more`;
+function orderBooksLabel(order: AdminOrderSummaryDto): string {
+  const titles = order.bookTitles ?? [];
+  if (titles.length === 0) return "—";
+  if (titles.length === 1) return titles[0];
+  return `${titles[0]} + ${titles.length - 1} more`;
 }
 
-function orderBooksSearchText(order: AdminOrderDto): string {
-  return (order.items ?? []).map((i) => i.title).join(" ");
+function orderBooksSearchText(order: AdminOrderSummaryDto): string {
+  return (order.bookTitles ?? []).join(" ");
 }
 
 export default function Orders() {
@@ -60,7 +60,7 @@ export default function Orders() {
         if (!["Paid", "Processing", "In Transit", "Shipped", "AwaitingInbound", "InboundBooked", "InTransitToHub", "Sorted"].includes(o.status)) return false;
       } else if (o.status !== filter) return false;
     }
-    const searchable = `${o.orderNumber} ${o.buyer?.name ?? ""} ${o.seller?.name ?? ""} ${orderBooksSearchText(o)}`.toLowerCase();
+    const searchable = `${o.orderNumber} ${o.buyerName ?? ""} ${o.sellerName ?? ""} ${orderBooksSearchText(o)}`.toLowerCase();
     if (query && !searchable.includes(query.toLowerCase())) return false;
     const d = new Date(o.date).getTime();
     if (d < range.from.getTime() || d > range.to.getTime()) return false;
@@ -70,7 +70,7 @@ export default function Orders() {
   const paged = usePaginated(data, page, PAGE_SIZE);
 
   const exportCsv = () => {
-    const rows = [["Order", "Buyer", "Seller", "Books", "Amount", "Delivery", "Status", "Date"], ...data.map((o) => [o.orderNumber, o.buyer.name, o.seller.name, orderBooksLabel(o), moneyInNaira(o.amount), o.delivery, o.status, o.date])];
+    const rows = [["Order", "Buyer", "Seller", "Books", "Amount", "Delivery", "Status", "Date"], ...data.map((o) => [o.orderNumber, o.buyerName, o.sellerName, orderBooksLabel(o), moneyInNaira(o.amount), o.delivery, o.status, o.date])];
     const csv = rows.map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `orders-${Date.now()}.csv`; a.click();
@@ -125,8 +125,8 @@ export default function Orders() {
               {paged.map((o) => (
                 <tr key={o.orderNumber} onClick={() => navigate(`/admin/orders/${encodeURIComponent(o.orderNumber)}`)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40">
                   <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{o.orderNumber}</td>
-                  <td className="px-5 py-3 font-medium text-foreground">{o.buyer.name}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{o.seller.name}</td>
+                  <td className="px-5 py-3 font-medium text-foreground">{o.buyerName}</td>
+                  <td className="px-5 py-3 text-muted-foreground">{o.sellerName}</td>
                   <td className="px-5 py-3 text-muted-foreground">{orderBooksLabel(o)}</td>
                   <td className="px-5 py-3 font-semibold text-foreground">₦{moneyInNaira(o.amount).toLocaleString()}</td>
                   <td className="px-5 py-3 text-muted-foreground">{o.delivery}</td>
