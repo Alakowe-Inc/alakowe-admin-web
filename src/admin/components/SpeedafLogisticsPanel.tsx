@@ -124,6 +124,18 @@ export function SpeedafLogisticsPanel({
 
   const inbound = data?.shipments?.find((s) => s.leg === "Inbound")
   const outbound = data?.shipments?.find((s) => s.leg === "Outbound")
+  const statusKey = (data?.orderStatus || orderStatus || "").trim()
+  const atOrPastHub = [
+    "AtHub",
+    "Sorted",
+    "OutboundBooked",
+    "OutForDelivery",
+    "Shipped",
+    "Delivered",
+  ].includes(statusKey)
+  const isDelivered = statusKey === "Delivered"
+  const showRetryInbound = !isDelivered && !inbound && !atOrPastHub
+  const showBookOutbound = !isDelivered && !outbound
 
   const bookInboundRetry = async () => {
     if (!orderNumber) return
@@ -243,14 +255,23 @@ export function SpeedafLogisticsPanel({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {!inbound && (
+          {showRetryInbound && (
             <Button type="button" variant="outline" disabled={loading || !orderNumber} onClick={bookInboundRetry} className="gap-1.5">
               <Package className="h-4 w-4" /> Retry inbound waybill
             </Button>
           )}
-          <Button type="button" disabled={loading || !orderNumber || !!outbound} onClick={bookOutbound} className="gap-1.5">
-            <Truck className="h-4 w-4" /> Book outbound (drop at Speedaf → buyer)
-          </Button>
+          {showBookOutbound && (
+            <Button type="button" disabled={loading || !orderNumber} onClick={bookOutbound} className="gap-1.5">
+              <Truck className="h-4 w-4" /> Book outbound (drop at Speedaf → buyer)
+            </Button>
+          )}
+          {!showRetryInbound && !showBookOutbound && (
+            <p className="text-xs text-muted-foreground">
+              {isDelivered
+                ? "Order delivered — Speedaf booking actions are closed."
+                : "No Speedaf booking actions available for the current status."}
+            </p>
+          )}
         </div>
 
         {data && (
