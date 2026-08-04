@@ -20,7 +20,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAdminOrderApi, updateAdminOrderStatusApi } from "@/lib/api/admin/admin.api";
 import { moneyInNaira } from "@/lib/utils";
 
-const STATUSES = [
+const COURIER_STATUSES = [
   "Pending",
   "Confirmed",
   "AwaitingInbound",
@@ -33,10 +33,18 @@ const STATUSES = [
   "Shipped",
   "Delivered",
   "Cancelled",
-] as const;
+] as const
 
-type Step = { key: string; label: string; matches: string[] };
-const STEPS: Step[] = [
+const PICKUP_STATUSES = [
+  "Pending",
+  "Confirmed",
+  "Delivered",
+  "Cancelled",
+] as const
+
+type Step = { key: string; label: string; matches: string[] }
+
+const COURIER_STEPS: Step[] = [
   { key: "payment", label: "Payment Received", matches: ["Paid", "Confirmed", "AwaitingInbound", "InboundBooked", "InTransitToHub", "AtHub", "Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
   { key: "awaiting", label: "Awaiting Seller Action", matches: ["Confirmed", "AwaitingInbound", "InboundBooked", "InTransitToHub", "AtHub", "Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
   { key: "scheduled", label: "Inbound Booked", matches: ["InboundBooked", "InTransitToHub", "AtHub", "Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
@@ -44,13 +52,39 @@ const STEPS: Step[] = [
   { key: "processing", label: "Sorted", matches: ["Sorted", "OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
   { key: "dispatched", label: "Outbound", matches: ["OutboundBooked", "OutForDelivery", "Shipped", "Delivered"] },
   { key: "delivered", label: "Delivered", matches: ["Delivered"] },
-];
+]
 
-function currentStepIndex(status: string) {
-  if (status === "Cancelled") return -1;
-  let last = 0;
-  STEPS.forEach((s, i) => { if (s.matches.includes(status)) last = i; });
-  return last;
+const PICKUP_STEPS: Step[] = [
+  { key: "payment", label: "Payment Received", matches: ["Paid", "Pending", "Confirmed", "Delivered"] },
+  { key: "ready", label: "Ready for pickup", matches: ["Confirmed", "Delivered"] },
+  { key: "picked", label: "Picked up", matches: ["Delivered"] },
+]
+
+function currentStepIndex(status: string, steps: Step[]) {
+  if (status === "Cancelled") return -1
+  let last = 0
+  steps.forEach((s, i) => { if (s.matches.includes(status)) last = i })
+  return last
+}
+
+function isPickupOrder(order: { fulfillmentType?: string; delivery?: string }) {
+  const type = (order.fulfillmentType || order.delivery || "").toLowerCase()
+  return type === "pickup"
+}
+
+function formatPickupDates(dates?: string[] | null): string {
+  if (!dates?.length) return ""
+  return dates
+    .map((d) => {
+      const parsed = new Date(d)
+      if (Number.isNaN(parsed.getTime())) return d
+      return parsed.toLocaleDateString(undefined, {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      })
+    })
+    .join("; ")
 }
 
 export default function OrderDetail() {
@@ -76,7 +110,14 @@ export default function OrderDetail() {
   });
   const [next, setNext] = useState<string>("");
 
-  const stepIdx = useMemo(() => order ? currentStepIndex(order.status) : 0, [order]);
+  const pickup = !!order && isPickupOrder(order)
+  const steps = pickup ? PICKUP_STEPS : COURIER_STEPS
+  const statuses = pickup ? PICKUP_STATUSES : COURIER_STATUSES
+  const stepIdx = useMemo(
+    () => (order ? currentStepIndex(order.status, steps) : 0),
+    [order, steps],
+  )
+  const pickupDatesLabel = order ? formatPickupDates(order.pickupPreferredDates) : ""
 
   if (isLoading) {
     return (
@@ -114,7 +155,7 @@ export default function OrderDetail() {
         <div className="flex flex-wrap items-center gap-2">
           <Select value={next} onValueChange={setNext}>
             <SelectTrigger className="h-9 w-[180px] rounded-xl"><SelectValue placeholder="Change status…" /></SelectTrigger>
-            <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            <SelectContent>{statuses.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
           <Button onClick={() => apply(false)} disabled={!next || updateStatus.isPending}>Update Status</Button>
           <DropdownMenu>
@@ -144,6 +185,11 @@ export default function OrderDetail() {
             <div className="flex flex-wrap items-center gap-2.5">
               <h2 className="font-display text-xl font-bold text-foreground">Order {order.orderNumber}</h2>
               <StatusBadge status={order.status} />
+              {pickup && (
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary ring-1 ring-primary/20">
+                  Pickup
+                </span>
+              )}
             </div>
             <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <Calendar className="h-3.5 w-3.5" /> Placed {new Date(order.date).toLocaleDateString(undefined, { dateStyle: "medium" })}
@@ -157,8 +203,8 @@ export default function OrderDetail() {
 
         {/* Horizontal stepper */}
         <div className="mt-6 -mx-1 overflow-x-auto pb-1">
-          <div className="flex min-w-[720px] items-start gap-1 px-1">
-            {STEPS.map((s, i) => {
+          <div className={`flex items-start gap-1 px-1 ${pickup ? "min-w-[420px]" : "min-w-[720px]"}`}>
+            {steps.map((s, i) => {
               const done = stepIdx > i;
               const active = stepIdx === i && order.status !== "Cancelled";
               const cancelled = order.status === "Cancelled";
@@ -179,7 +225,7 @@ export default function OrderDetail() {
                       {s.label}
                     </p>
                   </div>
-                  {i < STEPS.length - 1 && (
+                  {i < steps.length - 1 && (
                     <div className={`mt-[18px] h-0.5 flex-1 transition-colors ${
                       cancelled ? "bg-destructive/20" : done ? "bg-success" : "bg-border"
                     }`} />
@@ -256,30 +302,41 @@ export default function OrderDetail() {
               </ul>
             </PageCard>
 
-            <PageCard title="Delivery Information">
+            <PageCard title={pickup ? "Pickup Information" : "Delivery Information"}>
               <ul className="space-y-2.5 text-sm">
-                <Row icon={Truck} label="Method" value={order.delivery} />
-                <Row icon={Hash} label="Tracking" value={order.shippingAddress ? "See Speedaf panel if booked" : "—"} />
-                <Row icon={MapPin} label="Address" value={order.shippingAddress ?? "—"} />
-                <Row icon={Calendar} label="Hub" value="14b Ikosi Road, Ketu, Lagos" />
+                <Row icon={Truck} label="Method" value={pickup ? "Buyer pickup" : order.delivery} />
+                {pickup ? (
+                  <>
+                    <Row icon={MapPin} label="Pickup address" value={order.pickupAddress ?? "—"} />
+                    <Row icon={Calendar} label="Preferred days" value={pickupDatesLabel || "—"} />
+                  </>
+                ) : (
+                  <>
+                    <Row icon={Hash} label="Tracking" value={order.shippingAddress ? "See Speedaf panel if booked" : "—"} />
+                    <Row icon={MapPin} label="Address" value={order.shippingAddress ?? "—"} />
+                    <Row icon={Calendar} label="Hub" value="14b Ikosi Road, Ketu, Lagos" />
+                  </>
+                )}
               </ul>
             </PageCard>
           </div>
 
-          <SpeedafLogisticsPanel
-            orderNumber={order.orderNumber}
-            orderStatus={order.status}
-            sellerName={order.seller.name}
-            sellerPhone={order.seller.phone}
-            sellerAddress={order.seller.address}
-            preferredStationId={order.preferredSpeedafStationId}
-            preferredStationName={order.preferredSpeedafStationName}
-            preferredStationAddress={order.preferredSpeedafStationAddress}
-            preferredStationCity={order.preferredSpeedafStationCity}
-            sellerDropoffScheduledAt={order.sellerDropoffScheduledAt}
-            initialShipments={order.shipments}
-            onChanged={() => refetch()}
-          />
+          {!pickup && (
+            <SpeedafLogisticsPanel
+              orderNumber={order.orderNumber}
+              orderStatus={order.status}
+              sellerName={order.seller.name}
+              sellerPhone={order.seller.phone}
+              sellerAddress={order.seller.address}
+              preferredStationId={order.preferredSpeedafStationId}
+              preferredStationName={order.preferredSpeedafStationName}
+              preferredStationAddress={order.preferredSpeedafStationAddress}
+              preferredStationCity={order.preferredSpeedafStationCity}
+              sellerDropoffScheduledAt={order.sellerDropoffScheduledAt}
+              initialShipments={order.shipments}
+              onChanged={() => refetch()}
+            />
+          )}
         </div>
 
         {/* Right col - sidebar */}

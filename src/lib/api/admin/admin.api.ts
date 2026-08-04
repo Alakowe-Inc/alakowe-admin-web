@@ -404,7 +404,10 @@ export interface AdminOrderDto {
   shippedDate?: string
   deliveredDate?: string
   delivery: "Pickup" | "Drop-off" | "Courier" | string
+  fulfillmentType?: "Courier" | "Pickup" | string
   shippingAddress?: string
+  pickupAddress?: string | null
+  pickupPreferredDates?: string[] | null
   preferredSpeedafStationId?: number | null
   preferredSpeedafStationName?: string | null
   preferredSpeedafStationAddress?: string | null
@@ -436,6 +439,7 @@ export interface AdminOrderSummaryDto {
   status: string
   amount: number
   delivery: "Pickup" | "Drop-off" | "Courier" | string
+  fulfillmentType?: "Courier" | "Pickup" | string
   date: string
   buyerName: string
   sellerName: string
