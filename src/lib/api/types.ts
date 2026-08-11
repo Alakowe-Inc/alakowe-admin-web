@@ -288,3 +288,76 @@ export interface LandingPageSectionResponse {
   filterParam?: any
   listings?: ListingResponse[] | null
 }
+
+/* ───────── Admin Customer Management ───────── */
+
+export type CustomerStatus =
+  | "Active"
+  | "Verified"
+  | "Flagged"
+  | "Suspended"
+  | "Banned"
+  | "Pending"
+
+export interface CustomerModerationRecordResponse {
+  reason?: string | null
+  durationDays?: number | null
+  date?: string
+}
+
+export interface AdminCustomerResponse {
+  id?: number
+  name?: string | null
+  email?: string | null
+  phoneNumber?: string | null
+  avatar?: string | null
+  role?: string | null
+  verified?: boolean
+  status?: CustomerStatus
+  listingsCount?: number
+  joined?: string | null
+  lastActive?: string | null
+}
+
+export interface AdminCustomerDetailResponse extends AdminCustomerResponse {
+  address?: string | null
+  bio?: string | null
+  storeName?: string | null
+  storeSlug?: string | null
+  salesCount?: number
+  purchasesCount?: number
+  requestsCount?: number
+  warnings?: CustomerModerationRecordResponse[] | null
+  suspensionHistory?: CustomerModerationRecordResponse[] | null
+}
+
+export interface AdminCustomerPagedResult {
+  result?: AdminCustomerResponse[] | null
+  pageNumber?: number
+  pageSize?: number
+  totalCount?: number
+  totalPages?: number
+  hasPreviousPage?: boolean
+  hasNextPage?: boolean
+  links?: PageLinks
+}
+
+export interface CustomerFilterParams {
+  Search?: string
+  Status?: CustomerStatus
+  PageNumber?: number
+  PageSize?: number
+}
+
+export interface FlagCustomerRequest {
+  reason?: string | null
+}
+
+export interface WarnCustomerRequest {
+  reason?: string | null
+}
+
+export interface SuspendCustomerRequest {
+  reason?: string | null
+  durationDays?: number
+}

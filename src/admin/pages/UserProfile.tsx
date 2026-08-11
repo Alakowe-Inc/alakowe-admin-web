@@ -14,6 +14,11 @@ import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { useAdminStore } from "@/admin/store/adminStore";
 import {
+  useAdminCustomer, useVerifyCustomer, useFlagCustomer,
+  useWarnCustomer, useSuspendCustomer, useBanCustomer,
+} from "@/lib/api/admin/admin.hooks";
+import { toAdminCustomerDetail } from "@/lib/api/admin/admin-adapter";
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -25,16 +30,18 @@ import { toast } from "react-toastify";
 export default function UserProfile() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const user = useAdminStore((s) => s.users.find((u) => u.id === id));
   const listings = useAdminStore((s) => s.listings);
   const orders = useAdminStore((s) => s.orders);
   const requests = useAdminStore((s) => s.requests);
 
-  const verifyUser = useAdminStore((s) => s.verifyUser);
-  const flagUser = useAdminStore((s) => s.flagUser);
-  const warnUser = useAdminStore((s) => s.warnUser);
-  const suspendUser = useAdminStore((s) => s.suspendUser);
-  const banUser = useAdminStore((s) => s.banUser);
+  const { data: detail, isLoading } = useAdminCustomer(Number(id));
+  const verify = useVerifyCustomer();
+  const flag = useFlagCustomer();
+  const warn = useWarnCustomer();
+  const suspend = useSuspendCustomer();
+  const ban = useBanCustomer();
+
+  const user = useMemo(() => (detail ? toAdminCustomerDetail(detail) : null), [detail]);
 
   const [warnOpen, setWarnOpen] = useState(false);
   const [warnText, setWarnText] = useState("");
@@ -47,6 +54,14 @@ export default function UserProfile() {
   const sales = useMemo(() => user ? orders.filter((o) => o.seller === user.name) : [], [user, orders]);
   const purchases = useMemo(() => user ? orders.filter((o) => o.buyer === user.name) : [], [user, orders]);
   const userRequests = useMemo(() => user ? requests.filter((r) => r.user === user.name) : [], [user, requests]);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-dashed bg-card p-10 text-center">
+        <p className="text-sm text-muted-foreground">Loading user…</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -84,11 +99,11 @@ export default function UserProfile() {
           </div>
           <div className="flex flex-wrap gap-2">
             {!user.verified && (
-              <Button variant="outline" size="sm" onClick={() => { verifyUser(user.id); toast("Verified"); }}>
+              <Button variant="outline" size="sm" onClick={() => { verify.mutate(Number(user.id)); toast("Verified"); }}>
                 <ShieldCheck className="mr-1.5 h-4 w-4" /> Verify
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => { flagUser(user.id); toast("Flagged"); }}>
+            <Button variant="outline" size="sm" onClick={() => { flag.mutate(Number(user.id)); toast("Flagged"); }}>
               <Flag className="mr-1.5 h-4 w-4" /> Flag
             </Button>
             <Button variant="outline" size="sm" onClick={() => setWarnOpen(true)}>
@@ -106,10 +121,10 @@ export default function UserProfile() {
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Total Listings" value={userListings.length} icon={BookOpen} />
-        <Stat label="Total Sales" value={sales.length} icon={Store} />
-        <Stat label="Total Purchases" value={purchases.length} icon={ShoppingBag} />
-        <Stat label="Total Requests" value={userRequests.length} icon={FileText} />
+        <Stat label="Total Listings" value={user.listingsCount} icon={BookOpen} />
+        <Stat label="Total Sales" value={user.salesCount} icon={Store} />
+        <Stat label="Total Purchases" value={user.purchasesCount} icon={ShoppingBag} />
+        <Stat label="Total Requests" value={user.requestsCount} icon={FileText} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -224,7 +239,7 @@ export default function UserProfile() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setWarnOpen(false)}>Cancel</Button>
             <Button onClick={() => {
-              warnUser(user.id, warnText || "Policy reminder");
+              warn.mutate({ id: Number(user.id), reason: warnText || "Policy reminder" });
               toast("Warning sent");
               setWarnOpen(false); setWarnText("");
             }}>Send warning</Button>
@@ -252,7 +267,7 @@ export default function UserProfile() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setSuspendOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={() => {
-              suspendUser(user.id, suspendReason || "Policy violation", suspendDays);
+              suspend.mutate({ id: Number(user.id), reason: suspendReason || "Policy violation", durationDays: suspendDays });
               toast("Suspended");
               setSuspendOpen(false); setSuspendReason("");
             }}>Suspend</Button>
@@ -271,7 +286,7 @@ export default function UserProfile() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { banUser(user.id); toast("Banned"); setBanOpen(false); }}
+              onClick={() => { ban.mutate(Number(user.id)); toast("Banned"); setBanOpen(false); }}
             >Ban user</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
