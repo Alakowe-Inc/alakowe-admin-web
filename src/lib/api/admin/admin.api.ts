@@ -35,6 +35,15 @@ import type {
   AddLandingPageSectionRequestDto,
   UpdateLandingPageSectionRequestDto,
   LandingPageSectionResponse,
+  AdminCustomerResponse,
+  AdminCustomerDetailResponse,
+  AdminCustomerPagedResult,
+  CustomerFilterParams,
+  FlagCustomerRequest,
+  WarnCustomerRequest,
+  SuspendCustomerRequest,
+  PayoutRequestResponsePagedResult,
+  PayoutRequestResponse,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -548,4 +557,67 @@ export interface SpeedafStationDto {
 export async function getAdminSpeedafStationsApi(city?: string): Promise<SpeedafStationDto[]> {
   const { data } = await client.get("/api/v1/admin/shipments/stations", { params: { city } })
   return data as SpeedafStationDto[]
+}
+
+/* ───────── Admin Customer Management ───────── */
+
+export async function getAdminCustomersByFilterApi(params?: CustomerFilterParams): Promise<AdminCustomerPagedResult> {
+  const { data } = await client.get("/api/v1/admincustomermanagement/by-filter", { params })
+  return data as AdminCustomerPagedResult
+}
+
+export async function getAdminCustomerByIdApi(id: number): Promise<AdminCustomerDetailResponse> {
+  const { data } = await client.get(`/api/v1/admincustomermanagement/${id}`)
+  return data as AdminCustomerDetailResponse
+}
+
+export async function verifyCustomerApi(id: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admincustomermanagement/${id}/verify`)
+  return data as boolean
+}
+
+export async function flagCustomerApi(id: number, body?: FlagCustomerRequest): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admincustomermanagement/${id}/flag`, body ?? {})
+  return data as boolean
+}
+
+export async function warnCustomerApi(id: number, body: WarnCustomerRequest): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admincustomermanagement/${id}/warn`, body)
+  return data as boolean
+}
+
+export async function suspendCustomerApi(id: number, body: SuspendCustomerRequest): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admincustomermanagement/${id}/suspend`, body)
+  return data as boolean
+}
+
+export async function banCustomerApi(id: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admincustomermanagement/${id}/ban`)
+  return data as boolean
+}
+
+export async function reactivateCustomerApi(id: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admincustomermanagement/${id}/reactivate`)
+  return data as boolean
+}
+
+export async function getAdminPayoutRequestsApi(
+  status?: string,
+  pageNumber = 1,
+  pageSize = 20,
+): Promise<PayoutRequestResponsePagedResult> {
+  const { data } = await client.get("/api/v1/admin/payout-requests", {
+    params: { status, pageNumber, pageSize },
+  })
+  return data as PayoutRequestResponsePagedResult
+}
+
+export async function getAdminPayoutRequestByIdApi(id: number): Promise<PayoutRequestResponse> {
+  const { data } = await client.get(`/api/v1/admin/payout-requests/${id}`)
+  return data as PayoutRequestResponse
+}
+
+export async function updatePayoutRequestStatusApi(id: number, status: string): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admin/payout-requests/${id}/status`, { status })
+  return data as boolean
 }

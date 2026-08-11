@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAdminStore } from "@/admin/store/adminStore";
 import { Paginator } from "@/admin/components/Paginator";
+import { useAdminCustomers } from "@/lib/api/admin/admin.hooks";
+import { toAdminCustomer } from "@/lib/api/admin/admin-adapter";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger,
   DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -22,35 +23,26 @@ const STATUS_FILTERS = ["All", "Active", "Verified", "Flagged", "Suspended", "Ba
 
 export function UsersTable({ title, description }: Props) {
   const navigate = useNavigate();
-  const users = useAdminStore((s) => s.users);
-  const listings = useAdminStore((s) => s.listings);
-  const orders = useAdminStore((s) => s.orders);
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<typeof STATUS_FILTERS[number]>("All");
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    setPage(1);
-    const t = setTimeout(() => setLoading(false), 200);
-    return () => clearTimeout(t);
-  }, [query, status]);
+  const { data: pagedResult, isLoading } = useAdminCustomers(
+    status !== "All" ? { Status: status } : undefined
+  );
 
-  // Aggregate per-user marketplace metrics from store
-  const enriched = useMemo(() => users.map((u) => {
-    const listingCount = listings.filter((l) => l.seller === u.name).length;
-    const sales = orders.filter((o) => o.seller === u.name).length;
-    const purchases = orders.filter((o) => o.buyer === u.name).length;
-    return { ...u, listingCount, sales, purchases };
-  }), [users, listings, orders]);
+  useEffect(() => { setPage(1); }, [query, status]);
 
-  const data = useMemo(() => enriched.filter((u) => {
-    if (status !== "All" && u.status !== status) return false;
+  const customers = useMemo(
+    () => (pagedResult?.result ?? []).map(toAdminCustomer),
+    [pagedResult]
+  );
+
+  const data = useMemo(() => customers.filter((u) => {
     if (query && !`${u.name} ${u.email} ${u.id}`.toLowerCase().includes(query.toLowerCase())) return false;
     return true;
-  }), [enriched, status, query]);
+  }), [customers, query]);
 
   const paged = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -99,24 +91,22 @@ export function UsersTable({ title, description }: Props) {
               <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                 <th className="px-5 py-3 font-medium">User</th>
                 <th className="px-5 py-3 font-medium">Listings</th>
-                <th className="px-5 py-3 font-medium">Sales</th>
-                <th className="px-5 py-3 font-medium">Purchases</th>
                 <th className="px-5 py-3 font-medium">Status</th>
                 <th className="px-5 py-3 font-medium">Joined</th>
                 <th className="px-5 py-3 text-right font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-border/40">
-                    {Array.from({ length: 7 }).map((__, j) => (
+                    {Array.from({ length: 5 }).map((__, j) => (
                       <td key={j} className="px-5 py-4"><Skeleton className="h-4 w-full" /></td>
                     ))}
                   </tr>
                 ))
               ) : paged.length === 0 ? (
-                <tr><td colSpan={7} className="px-5 py-12 text-center text-sm text-muted-foreground">No users match your filters.</td></tr>
+                <tr><td colSpan={5} className="px-5 py-12 text-center text-sm text-muted-foreground">No users match your filters.</td></tr>
               ) : paged.map((u) => (
                 <tr
                   key={u.id}
@@ -137,9 +127,7 @@ export function UsersTable({ title, description }: Props) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3 font-semibold text-foreground">{u.listingCount}</td>
-                  <td className="px-5 py-3 font-semibold text-success">{u.sales}</td>
-                  <td className="px-5 py-3 font-semibold text-primary">{u.purchases}</td>
+                  <td className="px-5 py-3 font-semibold text-foreground">{u.listingsCount}</td>
                   <td className="px-5 py-3"><StatusBadge status={u.status} /></td>
                   <td className="px-5 py-3 text-muted-foreground">{u.joined}</td>
                   <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>

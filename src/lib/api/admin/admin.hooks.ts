@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { withMock } from "../use-mock"
+import { payouts as seedPayouts } from "../../mock-data"
 import {
   adminLoginApi,
   adminInitiatePasswordResetApi,
@@ -52,6 +53,18 @@ import {
   updateLandingPageSectionApi,
   deleteLandingPageSectionApi,
   getLandingPageApi,
+  getAdminCustomersByFilterApi,
+  getAdminCustomerByIdApi,
+  verifyCustomerApi,
+  flagCustomerApi,
+  warnCustomerApi,
+  suspendCustomerApi,
+  banCustomerApi,
+  reactivateCustomerApi,
+  type CustomerFilterParams,
+  updatePayoutRequestStatusApi,
+  getAdminPayoutRequestByIdApi,
+  getAdminPayoutRequestsApi,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -88,6 +101,15 @@ import type {
   AddLandingPageSectionRequestDto,
   UpdateLandingPageSectionRequestDto,
   LandingPageSectionResponse,
+  AdminCustomerResponse,
+  AdminCustomerDetailResponse,
+  AdminCustomerPagedResult,
+  CustomerModerationRecordResponse,
+  FlagCustomerRequest,
+  WarnCustomerRequest,
+  SuspendCustomerRequest,
+  PayoutRequestResponse,
+  PayoutRequestResponsePagedResult,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -144,6 +166,32 @@ const mockPagedResult: ListingResponsePagedResult = {
   pageNumber: 1,
   pageSize: 20,
   totalCount: 1,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+}
+
+const mockPayoutRequests: PayoutRequestResponse[] = seedPayouts.map((p, i) => ({
+  id: 901 + i,
+  requestNumber: p.id,
+  orderId: 20480 + i,
+  orderNumber: `ORD-${20480 + i}`,
+  sellerEmail: `${p.seller.toLowerCase().replace(/[^a-z]/g, "")}@example.com`,
+  sellerName: p.seller,
+  amount: p.amount,
+  status: p.status,
+  requestedAt: new Date(Date.now() - i * 86400000).toISOString(),
+  bankName: p.bank?.bankName,
+  accountName: p.bank?.accountName,
+  accountNumber: p.bank?.accountNumber,
+  linkedOrders: [20480 + i],
+}))
+
+const mockPayoutPagedResult: PayoutRequestResponsePagedResult = {
+  result: mockPayoutRequests,
+  pageNumber: 1,
+  pageSize: 20,
+  totalCount: mockPayoutRequests.length,
   totalPages: 1,
   hasPreviousPage: false,
   hasNextPage: false,
@@ -670,6 +718,154 @@ export function useDeleteLandingPageSection() {
       withMock(true, () => deleteLandingPageSectionApi(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-landing-page"] })
+    },
+  })
+}
+
+/* ───────── Admin Customer Management ───────── */
+
+const mockModerationRecord: CustomerModerationRecordResponse = {
+  reason: "Mock reason",
+  durationDays: 7,
+  date: new Date().toISOString(),
+}
+
+const mockAdminCustomer: AdminCustomerResponse = {
+  id: 1,
+  name: "Adaeze Okonkwo",
+  email: "adaeze.okonkwo@alakowe.app",
+  phoneNumber: "08030000000",
+  avatar: "AO",
+  role: "Seller",
+  verified: false,
+  status: "Active",
+  listingsCount: 2,
+  joined: new Date().toISOString(),
+  lastActive: new Date().toISOString(),
+}
+
+const mockAdminCustomerDetail: AdminCustomerDetailResponse = {
+  ...mockAdminCustomer,
+  address: "1 Mock Street, Lagos",
+  bio: "Reads mostly: Fiction",
+  storeName: null,
+  storeSlug: null,
+  salesCount: 3,
+  purchasesCount: 5,
+  requestsCount: 1,
+  warnings: [mockModerationRecord],
+  suspensionHistory: [],
+}
+
+const mockCustomerPagedResult: AdminCustomerPagedResult = {
+  result: [mockAdminCustomer],
+  pageNumber: 1,
+  pageSize: 20,
+  totalCount: 1,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+}
+
+export function useAdminCustomers(params?: CustomerFilterParams) {
+  return useQuery({
+    queryKey: ["admin-customers", params],
+    queryFn: () => withMock(mockCustomerPagedResult, () => getAdminCustomersByFilterApi(params)),
+  })
+}
+
+export function useAdminCustomer(id: number) {
+  return useQuery({
+    queryKey: ["admin-customers", id],
+    queryFn: () => withMock(mockAdminCustomerDetail, () => getAdminCustomerByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useVerifyCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => withMock(true, () => verifyCustomerApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useFlagCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => withMock(true, () => flagCustomerApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useWarnCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: WarnCustomerRequest & { id: number }) =>
+      withMock(true, () => warnCustomerApi(body.id, { reason: body.reason })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useSuspendCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SuspendCustomerRequest & { id: number }) =>
+      withMock(true, () => suspendCustomerApi(body.id, { reason: body.reason, durationDays: body.durationDays })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useBanCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => withMock(true, () => banCustomerApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useReactivateCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => withMock(true, () => reactivateCustomerApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useAdminPayoutRequests(status?: string) {
+  return useQuery({
+    queryKey: ["admin-payout-requests", status ?? "All"],
+    queryFn: () => withMock(mockPayoutPagedResult, () => getAdminPayoutRequestsApi(status)),
+  })
+}
+
+export function useAdminPayoutRequest(id: number) {
+  return useQuery({
+    queryKey: ["admin-payout-requests", id],
+    queryFn: () => withMock(mockPayoutRequests.find((p) => p.id === id) ?? mockPayoutRequests[0], () => getAdminPayoutRequestByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useUpdatePayoutRequestStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { id: number; status: string }) =>
+      withMock(true, () => updatePayoutRequestStatusApi(args.id, args.status)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-payout-requests"] })
     },
   })
 }
