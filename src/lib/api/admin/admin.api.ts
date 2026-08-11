@@ -42,6 +42,8 @@ import type {
   FlagCustomerRequest,
   WarnCustomerRequest,
   SuspendCustomerRequest,
+  PayoutRequestResponsePagedResult,
+  PayoutRequestResponse,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -596,5 +598,26 @@ export async function banCustomerApi(id: number): Promise<boolean> {
 
 export async function reactivateCustomerApi(id: number): Promise<boolean> {
   const { data } = await client.post(`/api/v1/admincustomermanagement/${id}/reactivate`)
+  return data as boolean
+}
+
+export async function getAdminPayoutRequestsApi(
+  status?: string,
+  pageNumber = 1,
+  pageSize = 20,
+): Promise<PayoutRequestResponsePagedResult> {
+  const { data } = await client.get("/api/v1/admin/payout-requests", {
+    params: { status, pageNumber, pageSize },
+  })
+  return data as PayoutRequestResponsePagedResult
+}
+
+export async function getAdminPayoutRequestByIdApi(id: number): Promise<PayoutRequestResponse> {
+  const { data } = await client.get(`/api/v1/admin/payout-requests/${id}`)
+  return data as PayoutRequestResponse
+}
+
+export async function updatePayoutRequestStatusApi(id: number, status: string): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/admin/payout-requests/${id}/status`, { status })
   return data as boolean
 }

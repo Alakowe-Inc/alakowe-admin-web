@@ -361,3 +361,32 @@ export interface SuspendCustomerRequest {
   reason?: string | null
   durationDays?: number
 }
+export interface PayoutRequestResponse {
+  id?: number
+  requestNumber?: string | null
+  orderId?: number
+  orderNumber?: string | null
+  sellerEmail?: string | null
+  sellerName?: string | null
+  amount?: number
+  status?: string | null
+  requestedAt?: string | null
+  bankName?: string | null
+  accountName?: string | null
+  accountNumber?: string | null
+  approvedAt?: string | null
+  paidAt?: string | null
+  note?: string | null
+  linkedOrders?: number[] | null
+}
+
+export interface PayoutRequestResponsePagedResult {
+  result?: PayoutRequestResponse[] | null
+  pageNumber?: number
+  pageSize?: number
+  totalCount?: number
+  totalPages?: number
+  hasPreviousPage?: boolean
+  hasNextPage?: boolean
+  links?: PageLinks
+}

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Eye, MoreHorizontal } from "lucide-react";
+import { Search, Eye, MoreHorizontal, Loader2 } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Input } from "@/components/ui/input";
@@ -9,24 +9,33 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAdminStore } from "@/admin/store/adminStore";
+import { useAdminPayoutRequests, useUpdatePayoutRequestStatus } from "@/lib/api/admin/admin.hooks";
+import type { PayoutRequestResponse } from "@/lib/api/types";
 import { toast } from "react-toastify";
 
 export default function Payments() {
   const navigate = useNavigate();
-  const payouts = useAdminStore((s) => s.payouts);
-  const markPaid = useAdminStore((s) => s.markPayoutPaid);
-  const markUnsuccessful = useAdminStore((s) => s.markPayoutUnsuccessful);
   const notifySeller = useAdminStore((s) => s.notifySeller);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
 
   const STATUSES = ["All", "Pending", "Processing", "Paid", "Unsuccessful"];
 
-  const data = payouts.filter((p) => {
-    if (status !== "All" && p.status !== status) return false;
-    if (q && !`${p.id} ${p.seller}`.toLowerCase().includes(q.toLowerCase())) return false;
-    return true;
-  });
+  const { data: pagedResult, isLoading } = useAdminPayoutRequests(status !== "All" ? status : undefined);
+  const updateStatus = useUpdatePayoutRequestStatus();
+
+  const data = useMemo(
+    () => (pagedResult?.result ?? []).filter((p) => {
+      if (q && !`${p.id} ${p.requestNumber} ${p.sellerName}`.toLowerCase().includes(q.toLowerCase())) return false;
+      return true;
+    }),
+    [pagedResult, q]
+  );
+
+  const setStatusAndNotify = (p: PayoutRequestResponse, next: "Processing" | "Paid" | "Unsuccessful", msg: string) => {
+    updateStatus.mutate({ id: Number(p.id), status: next });
+    toast(msg);
+  };
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -64,29 +73,45 @@ export default function Payments() {
               </tr>
             </thead>
             <tbody>
-              {data.map((p) => (
-                <tr key={p.id} onClick={() => navigate(`/admin/payments/${p.id}`)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40">
-                  <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{p.id}</td>
-                  <td className="px-5 py-3 font-medium text-foreground">{p.seller}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{p.bank?.bankName}</td>
-                  <td className="px-5 py-3 font-semibold text-foreground">₦{p.amount.toLocaleString()}</td>
-                  <td className="px-5 py-3"><StatusBadge status={p.status} /></td>
-                  <td className="px-5 py-3 text-muted-foreground">{p.date}</td>
-                  <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/admin/payments/${p.id}`)}><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { markPaid(p.id); toast("Payment marked as paid"); }}>Payment Made</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { markUnsuccessful(p.id); toast("Payment unsuccessful"); }}>Payment Unsuccessful</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { notifySeller(p.seller); toast(`Notified ${p.seller}`); }}>Notify Seller</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-primary" />
+                    <p className="mt-2 text-sm text-muted-foreground">Loading payouts…</p>
                   </td>
                 </tr>
-              ))}
+              ) : data.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                    No payout requests found.
+                  </td>
+                </tr>
+              ) : (
+                data.map((p) => (
+                  <tr key={p.id} onClick={() => navigate(`/admin/payments/${p.id}`)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40">
+                    <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{p.requestNumber ?? p.id}</td>
+                    <td className="px-5 py-3 font-medium text-foreground">{p.sellerName}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{p.bankName}</td>
+                    <td className="px-5 py-3 font-semibold text-foreground">₦{(p.amount ?? 0).toLocaleString()}</td>
+                    <td className="px-5 py-3"><StatusBadge status={p.status ?? "Pending"} /></td>
+                    <td className="px-5 py-3 text-muted-foreground">{p.requestedAt ? new Date(p.requestedAt).toLocaleDateString() : "—"}</td>
+                    <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/admin/payments/${p.id}`)}><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setStatusAndNotify(p, "Processing", "Payment approved")}>Approve Payment</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setStatusAndNotify(p, "Paid", "Payment marked as paid")}>Payment Made</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setStatusAndNotify(p, "Unsuccessful", "Payment unsuccessful")}>Payment Unsuccessful</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { notifySeller(p.sellerName ?? ""); toast(`Notified ${p.sellerName}`); }}>Notify Seller</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
