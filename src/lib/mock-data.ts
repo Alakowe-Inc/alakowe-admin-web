@@ -373,3 +373,80 @@ export const adminMembers: AdminMember[] = [
   { id: "AD-03", name: "Tunde Ojo", email: "tunde@alakowe.app", avatar: "TO", role: "Moderator", permissions: ["listings", "users:read"], lastLogin: new Date(Date.now() - 86400000 * 3).toISOString(), active: true },
   { id: "AD-04", name: "Folake Adeyemi", email: "folake@alakowe.app", avatar: "FA", role: "Support", permissions: ["orders:read", "users:read"], lastLogin: new Date(Date.now() - 86400000 * 14).toISOString(), active: false },
 ];
+
+// Disputes raised by buyers on delivered orders. Statuses mirror the admin
+// processing lifecycle: Open → UnderReview → Resolved / Rejected / Closed.
+export type DisputeStatus = "Open" | "UnderReview" | "Resolved" | "Rejected" | "Closed";
+
+export type Dispute = {
+  id: string;
+  orderNumber: string;
+  status: DisputeStatus;
+  reason: string;
+  filedBy: string;
+  seller: string;
+  book: string;
+  amount: number;
+  delivery: "Pickup" | "Drop-off" | "Courier";
+  filedAt: string;
+  dueAt: string;
+  evidence: string[];
+  resolution?: string;
+  decidedBy?: string;
+  decidedAt?: string;
+  activity?: { ts: string; text: string }[];
+};
+
+const DISPUTE_REASONS = [
+  "Book arrived damaged — spine is broken and several pages are torn.",
+  "Condition not as described. Listed as 'Like New' but pages are heavily annotated.",
+  "Received the wrong edition. Listing was the 2014 hardcover but I got a 2009 paperback.",
+  "Book missing from the package. Box arrived sealed but the item wasn't inside.",
+  "Cover art and pages are a different book than the one advertised.",
+  "Delivery took 3 weeks and the book arrived water-stained.",
+];
+
+const EVIDENCE_URLS = [
+  "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&q=60",
+  "https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400&q=60",
+  "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&q=60",
+  "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&q=60",
+];
+
+export const disputes: Dispute[] = Array.from({ length: 7 }).map((_, i) => {
+  const orderIdx = (i * 2) % orders.length;
+  const order = orders[orderIdx];
+  const status: DisputeStatus = (["Open", "Open", "UnderReview", "UnderReview", "Resolved", "Rejected", "Closed"] as const)[i % 7];
+  const filedAt = new Date(Date.now() - (i * 22 + 3) * 3600000).toISOString();
+  const decidedAt = status === "Resolved" || status === "Rejected" || status === "Closed"
+    ? new Date(Date.now() - (i * 4 + 1) * 3600000).toISOString()
+    : undefined;
+  return {
+    id: `DSP-${Date.now().toString(36).toUpperCase()}-${100 + i}`,
+    orderNumber: order.id,
+    status,
+    reason: DISPUTE_REASONS[i % DISPUTE_REASONS.length],
+    filedBy: order.buyer,
+    seller: order.seller,
+    book: order.book,
+    amount: order.amount * 100,
+    delivery: order.delivery,
+    filedAt,
+    dueAt: new Date(Date.parse(filedAt) + 48 * 3600000).toISOString(),
+    evidence: i % 3 === 0 ? [EVIDENCE_URLS[i % EVIDENCE_URLS.length], EVIDENCE_URLS[(i + 1) % EVIDENCE_URLS.length]] : [],
+    resolution: decidedAt
+      ? (status === "Resolved"
+        ? "Ruled in buyer's favour — full refund issued from escrow."
+        : status === "Rejected"
+          ? "Claim not substantiated — funds released to seller."
+          : "Buyer withdrew the dispute; no action required.")
+      : undefined,
+    decidedBy: decidedAt ? "Ngozi Eze" : undefined,
+    decidedAt,
+    activity: [
+      { ts: filedAt, text: "Dispute filed by buyer" },
+      ...(status === "UnderReview" ? [{ ts: new Date(Date.now() - (i * 9 + 2) * 3600000).toISOString(), text: "Moved to under review" }] : []),
+      ...(decidedAt ? [{ ts: decidedAt, text: "Dispute resolved" }] : []),
+    ],
+  };
+});

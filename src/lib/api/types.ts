@@ -411,3 +411,45 @@ export interface PayoutRequestResponsePagedResult {
   hasNextPage?: boolean
   links?: PageLinks
 }
+
+/* ───────── Admin Order Disputes ───────── */
+
+export type AdminDisputeStatus =
+  | "Open"
+  | "UnderReview"
+  | "Resolved"
+  | "Rejected"
+  | "Closed"
+
+export type AdminDisputeDecision =
+  | "RefundBuyer"
+  | "RuleForSeller"
+  | "Close"
+
+export interface AdminDisputeActivityResponse {
+  ts?: string
+  text?: string | null
+}
+
+export interface AdminDisputeResponse {
+  id?: number
+  disputeNumber?: string | null
+  orderId?: number
+  orderNumber?: string | null
+  status?: AdminDisputeStatus
+  reason?: string | null
+  filedBy?: string | null
+  filedByEmail?: string | null
+  sellerName?: string | null
+  amount?: number
+  delivery?: string | null
+  bookTitle?: string | null
+  filedAt?: string
+  dueAt?: string | null
+  evidence?: string[] | null
+  decision?: AdminDisputeDecision | null
+  resolution?: string | null
+  decidedBy?: string | null
+  decidedAt?: string | null
+  activity?: AdminDisputeActivityResponse[] | null
+}

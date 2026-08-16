@@ -2,7 +2,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft, MapPin, CreditCard, Truck, Calendar, MoreHorizontal, Zap,
-  Package, User, Mail, Phone, ShieldCheck, Hash, Check,
+  Package, User, Mail, Phone, ShieldCheck, Hash, Check, MessageSquareWarning, Scale,
 } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
@@ -236,6 +236,30 @@ export default function OrderDetail() {
           </div>
         </div>
       </PageCard>
+
+      {/* Disputed order banner */}
+      {order.status === "Disputed" && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 shadow-soft sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive">
+              <MessageSquareWarning className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-display text-sm font-bold text-foreground">This order has an open dispute</p>
+              <p className="text-xs text-muted-foreground">
+                The buyer did not confirm delivery. Escrow for this order is on hold until the dispute is resolved.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className="gap-1.5 border-destructive/40 bg-card text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            onClick={() => navigate(`/admin/disputes/${encodeURIComponent(order.orderNumber)}`)}
+          >
+            <Scale className="h-4 w-4" /> Review Dispute
+          </Button>
+        </div>
+      )}
 
       {/* Two-column grid */}
       <div className="grid gap-5 lg:grid-cols-3">

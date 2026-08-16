@@ -44,9 +44,13 @@ import type {
   SuspendCustomerRequest,
   PayoutRequestResponsePagedResult,
   PayoutRequestResponse,
+  AdminDisputeResponse,
+  AdminDisputeStatus,
+  AdminDisputeDecision,
 } from "../types"
 
 export type { CustomerFilterParams } from "../types"
+export type { AdminDisputeResponse, AdminDisputeStatus, AdminDisputeDecision } from "../types"
 
 type LoginBody = LoginRequestDto
 type EmailOnlyBody = EmailOnlyRequest
@@ -622,4 +626,37 @@ export async function getAdminPayoutRequestByIdApi(id: number): Promise<PayoutRe
 export async function updatePayoutRequestStatusApi(id: number, status: string): Promise<boolean> {
   const { data } = await client.post(`/api/v1/admin/payout-requests/${id}/status`, { status })
   return data as boolean
+}
+
+/* ───────── Admin Order Disputes ───────── */
+
+export interface AdminDisputeFilterParams {
+  Status?: AdminDisputeStatus
+  Search?: string
+  PageNumber?: number
+  PageSize?: number
+}
+
+export interface AdminDisputeUpdateRequest {
+  status?: AdminDisputeStatus
+  decision?: AdminDisputeDecision
+  resolution?: string
+}
+
+export async function getAdminDisputesApi(params?: AdminDisputeFilterParams): Promise<AdminDisputeResponse[]> {
+  const { data } = await client.get("/api/v1/admin/disputes", { params })
+  return data as AdminDisputeResponse[]
+}
+
+export async function getAdminDisputeApi(orderNumber: string): Promise<AdminDisputeResponse> {
+  const { data } = await client.get(`/api/v1/admin/disputes/${encodeURIComponent(orderNumber)}`)
+  return data as AdminDisputeResponse
+}
+
+export async function updateAdminDisputeStatusApi(
+  orderNumber: string,
+  body: AdminDisputeUpdateRequest,
+): Promise<AdminDisputeResponse> {
+  const { data } = await client.post(`/api/v1/admin/disputes/${encodeURIComponent(orderNumber)}/status`, body)
+  return data as AdminDisputeResponse
 }
