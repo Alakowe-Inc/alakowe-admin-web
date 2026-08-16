@@ -139,7 +139,10 @@ const mockListing: ListingResponse = {
   title: "Mock Listing",
   isbn: "123-4567890123",
   description: "A mock listing",
+  conditionDetail: "Very good condition, clean pages",
+  format: "Paperback",
   price: 250000,
+  buyerPrice: 287500,
   quantity: 1,
   bookCondition: "Good",
   author: "Mock Author",
@@ -148,11 +151,15 @@ const mockListing: ListingResponse = {
   isSoldOut: false,
   status: "PendingApproval",
   categoryName: "Fiction",
+  tags: [{ id: 1, name: "Best Seller", slug: "best-seller", categoryId: 1, categoryName: null }],
   createdBy: "seller@example.com",
   seller: "John Doe",
   dateCreated: new Date().toISOString(),
   cartItemCount: 0,
   wishlistItemCount: 0,
+  location: "Lekki, Lagos",
+  storeName: "Mock Seller's Store",
+  fulfillmentOption: "Courier",
   coverImageFileName: "https://placehold.co/400x600?text=Mock+Book",
   imageFileNames: [
     "https://placehold.co/400x600?text=Mock+Book",
@@ -291,8 +298,8 @@ export function useAdminListing(id: number) {
 export function useApproveListing() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) =>
-      withMock(true, () => approveListingApi(id)),
+    mutationFn: (args: { id: number; newPrice?: number }) =>
+      withMock(true, () => approveListingApi(args.id, args.newPrice)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
@@ -302,8 +309,8 @@ export function useApproveListing() {
 export function useDeclineListing() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) =>
-      withMock(true, () => declineListingApi(id)),
+    mutationFn: (args: { id: number; reason?: string }) =>
+      withMock(true, () => declineListingApi(args.id, args.reason)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },

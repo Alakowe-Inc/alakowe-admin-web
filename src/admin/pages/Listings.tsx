@@ -121,8 +121,8 @@ export default function Listings() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => navigate(`/admin/listings/${l.id}`)}><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { approve.mutate(Number(l.id)); toast("Approved"); }}><Check className="mr-2 h-4 w-4" /> Approve</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { decline.mutate(Number(l.id)); toast("Declined"); }}><Flag className="mr-2 h-4 w-4" /> Decline</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { approve.mutate({ id: Number(l.id) }); toast("Approved"); }}><Check className="mr-2 h-4 w-4" /> Approve</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { decline.mutate({ id: Number(l.id) }); toast("Declined"); }}><Flag className="mr-2 h-4 w-4" /> Decline</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/admin/listings/${l.id}`)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

@@ -323,7 +323,7 @@ export const payouts: Payout[] = Array.from({ length: 6 }).map((_, i) => {
     id: `PO-${901 + i}`,
     seller: NAMES[i],
     sellerId: `USR-${1000 + i}`,
-    amount: Math.floor(Math.random() * 280000) + 40000,
+    amount: (Math.floor(Math.random() * 280000) + 40000) * 100,
     status: (["Pending", "Processing", "Paid", "Unsuccessful"] as const)[i % 4],
     date: new Date(Date.now() - i * 86400000).toISOString().slice(0, 10),
     bank: {

@@ -65,8 +65,11 @@ export interface ListingResponse {
   title?: string | null
   isbn?: string | null
   description?: string | null
+  conditionDetail?: string | null
+  format?: string | null
   loveNote?: string | null
   price?: number
+  priceOfNew?: number | null
   quantity?: number
   bookCondition?: BookCondition
   coverImageFileName?: string | null
@@ -77,12 +80,30 @@ export interface ListingResponse {
   isSoldOut?: boolean
   status?: ListingStatus
   categoryName?: string | null
+  tags?: TagResponse[] | null
   createdBy?: string | null
   seller?: string | null
   dateCreated?: string | null
   dateModified?: string | null
   cartItemCount?: number
   wishlistItemCount?: number
+  collectionPriority?: number | null
+  discount?: number | null
+  isDiscountApplied?: boolean
+  buyerPrice?: number
+  stateId?: number | null
+  areaId?: number | null
+  location?: string | null
+  storeProfileId?: number | null
+  storeName?: string | null
+  storeSlug?: string | null
+  sellerUserName?: string | null
+  isSellerOnVacation?: boolean
+  sellerVacationMessage?: string | null
+  fulfillmentOption?: string | null
+  pickupAddressLine?: string | null
+  pickupCity?: string | null
+  pickupState?: string | null
 }
 
 export interface PageLinks {

@@ -46,6 +46,8 @@ import type {
   PayoutRequestResponse,
 } from "../types"
 
+export type { CustomerFilterParams } from "../types"
+
 type LoginBody = LoginRequestDto
 type EmailOnlyBody = EmailOnlyRequest
 type CompletePasswordResetBody = CompletePasswordResetRequestDto
@@ -107,13 +109,13 @@ export async function getAllCategoriesApi(): Promise<CategoryResponse[]> {
   return data as CategoryResponse[]
 }
 
-export async function approveListingApi(id: number): Promise<boolean> {
-  const { data } = await client.post(`/api/v1/AdminListing/approve/${id}`)
+export async function approveListingApi(id: number, newPrice?: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/approve/${id}`, { newPrice })
   return data as boolean
 }
 
-export async function declineListingApi(id: number): Promise<boolean> {
-  const { data } = await client.post(`/api/v1/AdminListing/decline/${id}`)
+export async function declineListingApi(id: number, reason?: string): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/decline/${id}`, { rejectionReason: reason ?? "" })
   return data as boolean
 }
 
