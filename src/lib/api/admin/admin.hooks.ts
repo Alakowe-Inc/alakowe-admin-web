@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { withMock } from "../use-mock"
-import { payouts as seedPayouts } from "../../mock-data"
+import { payouts as seedPayouts, disputes as seedDisputes } from "../../mock-data"
 import {
   adminLoginApi,
   adminInitiatePasswordResetApi,
@@ -65,6 +65,11 @@ import {
   updatePayoutRequestStatusApi,
   getAdminPayoutRequestByIdApi,
   getAdminPayoutRequestsApi,
+  getAdminDisputesApi,
+  getAdminDisputeApi,
+  updateAdminDisputeStatusApi,
+  type AdminDisputeFilterParams,
+  type AdminDisputeUpdateRequest,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -110,6 +115,9 @@ import type {
   SuspendCustomerRequest,
   PayoutRequestResponse,
   PayoutRequestResponsePagedResult,
+  AdminDisputeResponse,
+  AdminDisputeStatus,
+  AdminDisputeDecision,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -139,7 +147,10 @@ const mockListing: ListingResponse = {
   title: "Mock Listing",
   isbn: "123-4567890123",
   description: "A mock listing",
+  conditionDetail: "Very good condition, clean pages",
+  format: "Paperback",
   price: 250000,
+  buyerPrice: 287500,
   quantity: 1,
   bookCondition: "Good",
   author: "Mock Author",
@@ -148,11 +159,15 @@ const mockListing: ListingResponse = {
   isSoldOut: false,
   status: "PendingApproval",
   categoryName: "Fiction",
+  tags: [{ id: 1, name: "Best Seller", slug: "best-seller", categoryId: 1, categoryName: null }],
   createdBy: "seller@example.com",
   seller: "John Doe",
   dateCreated: new Date().toISOString(),
   cartItemCount: 0,
   wishlistItemCount: 0,
+  location: "Lekki, Lagos",
+  storeName: "Mock Seller's Store",
+  fulfillmentOption: "Courier",
   coverImageFileName: "https://placehold.co/400x600?text=Mock+Book",
   imageFileNames: [
     "https://placehold.co/400x600?text=Mock+Book",
@@ -291,8 +306,8 @@ export function useAdminListing(id: number) {
 export function useApproveListing() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) =>
-      withMock(true, () => approveListingApi(id)),
+    mutationFn: (args: { id: number; newPrice?: number }) =>
+      withMock(true, () => approveListingApi(args.id, args.newPrice)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
@@ -302,8 +317,8 @@ export function useApproveListing() {
 export function useDeclineListing() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) =>
-      withMock(true, () => declineListingApi(id)),
+    mutationFn: (args: { id: number; reason?: string }) =>
+      withMock(true, () => declineListingApi(args.id, args.reason)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
@@ -866,6 +881,64 @@ export function useUpdatePayoutRequestStatus() {
       withMock(true, () => updatePayoutRequestStatusApi(args.id, args.status)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-payout-requests"] })
+    },
+  })
+}
+
+/* ───────── Admin Order Disputes ───────── */
+
+const mockDisputes: AdminDisputeResponse[] = seedDisputes.map((d, i) => ({
+  id: 7000 + i,
+  disputeNumber: d.id,
+  orderId: 20480 + i,
+  orderNumber: d.orderNumber,
+  status: d.status,
+  reason: d.reason,
+  filedBy: d.filedBy,
+  sellerName: d.seller,
+  amount: d.amount,
+  delivery: d.delivery,
+  bookTitle: d.book,
+  filedAt: d.filedAt,
+  dueAt: d.dueAt,
+  evidence: d.evidence,
+  decision: d.status === "Resolved" ? "RefundBuyer" : d.status === "Rejected" ? "RuleForSeller" : null,
+  resolution: d.resolution,
+  decidedBy: d.decidedBy,
+  decidedAt: d.decidedAt,
+  activity: d.activity ?? [],
+}))
+
+export function useAdminDisputes(params?: AdminDisputeFilterParams) {
+  return useQuery({
+    queryKey: ["admin-disputes", params],
+    queryFn: () => withMock(mockDisputes, () => getAdminDisputesApi(params)),
+  })
+}
+
+export function useAdminDispute(orderNumber: string) {
+  return useQuery({
+    queryKey: ["admin-disputes", orderNumber],
+    queryFn: () =>
+      withMock(
+        mockDisputes.find((d) => d.orderNumber === orderNumber) ?? mockDisputes[0],
+        () => getAdminDisputeApi(orderNumber),
+      ),
+    enabled: !!orderNumber,
+  })
+}
+
+export function useUpdateAdminDispute() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { orderNumber: string; body: AdminDisputeUpdateRequest }) =>
+      withMock(
+        { ...(mockDisputes.find((d) => d.orderNumber === args.orderNumber) ?? mockDisputes[0]), ...args.body } as AdminDisputeResponse,
+        () => updateAdminDisputeStatusApi(args.orderNumber, args.body),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-disputes"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] })
     },
   })
 }

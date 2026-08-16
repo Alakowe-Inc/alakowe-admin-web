@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getAdminOrdersApi, type AdminOrderSummaryDto } from "@/lib/api/admin/admin.api";
 import { moneyInNaira } from "@/lib/utils";
 
-const STATUSES = ["All", "Pending", "Confirmed", "Processing", "AtHub", "OutboundBooked", "OutForDelivery", "Delivered", "Cancelled"] as const;
+const STATUSES = ["All", "Pending", "Confirmed", "Processing", "AtHub", "OutboundBooked", "OutForDelivery", "Delivered", "Disputed", "Cancelled"] as const;
 const PAGE_SIZE = 8;
 
 function orderBooksLabel(order: AdminOrderSummaryDto): string {

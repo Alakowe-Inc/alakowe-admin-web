@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAdminStore } from "@/admin/store/adminStore";
 import { useAdminPayoutRequest, useUpdatePayoutRequestStatus } from "@/lib/api/admin/admin.hooks";
 import type { PayoutRequestResponse } from "@/lib/api/types";
+import { moneyInNaira } from "@/lib/utils";
 import { toast } from "react-toastify";
 
 export default function PaymentDetail() {
@@ -81,7 +82,7 @@ export default function PaymentDetail() {
               <Field icon={User} label="Account name">{bank?.accountName ?? "—"}</Field>
               <Field icon={Building2} label="Bank name">{bank?.bankName ?? "—"}</Field>
               <Field icon={Hash} label="Account number"><span className="font-mono">{bank?.accountNumber ?? "—"}</span></Field>
-              <Field icon={CreditCard} label="Payable amount"><span className="font-display text-xl font-bold text-primary">₦{(payout.amount ?? 0).toLocaleString()}</span></Field>
+              <Field icon={CreditCard} label="Payable amount"><span className="font-display text-xl font-bold text-primary">₦{moneyInNaira(payout.amount).toLocaleString()}</span></Field>
             </div>
 
             <PageCard title="Linked orders" bodyClassName="p-0">

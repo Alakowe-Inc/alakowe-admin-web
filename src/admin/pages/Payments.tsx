@@ -11,6 +11,7 @@ import {
 import { useAdminStore } from "@/admin/store/adminStore";
 import { useAdminPayoutRequests, useUpdatePayoutRequestStatus } from "@/lib/api/admin/admin.hooks";
 import type { PayoutRequestResponse } from "@/lib/api/types";
+import { moneyInNaira } from "@/lib/utils";
 import { toast } from "react-toastify";
 
 export default function Payments() {
@@ -92,7 +93,7 @@ export default function Payments() {
                     <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{p.requestNumber ?? p.id}</td>
                     <td className="px-5 py-3 font-medium text-foreground">{p.sellerName}</td>
                     <td className="px-5 py-3 text-muted-foreground">{p.bankName}</td>
-                    <td className="px-5 py-3 font-semibold text-foreground">₦{(p.amount ?? 0).toLocaleString()}</td>
+                    <td className="px-5 py-3 font-semibold text-foreground">₦{moneyInNaira(p.amount).toLocaleString()}</td>
                     <td className="px-5 py-3"><StatusBadge status={p.status ?? "Pending"} /></td>
                     <td className="px-5 py-3 text-muted-foreground">{p.requestedAt ? new Date(p.requestedAt).toLocaleDateString() : "—"}</td>
                     <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>

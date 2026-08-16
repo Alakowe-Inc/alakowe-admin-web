@@ -1,8 +1,9 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Check, X, Ban, Edit, Bell, User, Calendar, Tag, Heart, FileText, BookOpen, Hash, TrendingUp, Wallet, Receipt } from "lucide-react";
+import { ArrowLeft, Check, X, Ban, Edit, Bell, User, Calendar, Tag, Heart, FileText, BookOpen, Hash, TrendingUp, Wallet, Receipt, MapPin, Store, BookMarked, Package, BadgeCheck } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAdminListing, useApproveListing, useDeclineListing } from "@/lib/api/admin/admin.hooks";
 import { toAdminListing } from "@/lib/api/admin/admin-adapter";
 import { useState } from "react";
@@ -23,6 +24,8 @@ export default function ListingDetail() {
 
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
+  const [approving, setApproving] = useState(false);
+  const [newPrice, setNewPrice] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const isMock = import.meta.env.VITE_USE_MOCK === "true";
@@ -42,10 +45,21 @@ export default function ListingDetail() {
     : listing.images;
   const locked = listing.status !== "Pending";
 
-  async function handleApprove() {
+  async function confirmApprove() {
     try {
-      await approve.mutateAsync(Number(id));
-      toast.success("Listing approved");
+      const raw = newPrice.trim();
+      let parsed: number | undefined;
+      if (raw !== "") {
+        parsed = Math.round(parseFloat(raw) * 100);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          toast.error("Enter a valid new price (₦)");
+          return;
+        }
+      }
+      await approve.mutateAsync({ id: Number(id), newPrice: parsed });
+      toast.success(parsed !== undefined ? `Listing approved with new price` : "Listing approved");
+      setApproving(false);
+      setNewPrice("");
     } catch {
       toast.error("Failed to approve listing");
     }
@@ -53,7 +67,7 @@ export default function ListingDetail() {
 
   async function handleReject() {
     try {
-      await decline.mutateAsync(Number(id));
+      await decline.mutateAsync({ id: Number(id), reason });
       toast.success("Listing declined");
       setRejecting(false);
       setReason("");
@@ -82,8 +96,8 @@ export default function ListingDetail() {
               <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setRejecting(true)}>
                 <X className="h-3.5 w-3.5" /> Reject
               </Button>
-              <Button size="sm" className="gap-1.5" onClick={handleApprove} disabled={approve.isPending}>
-                <Check className="h-3.5 w-3.5" /> {approve.isPending ? "Approving…" : "Approve"}
+              <Button size="sm" className="gap-1.5" onClick={() => setApproving(true)}>
+                <Check className="h-3.5 w-3.5" /> Approve
               </Button>
             </>
           )}
@@ -120,7 +134,7 @@ export default function ListingDetail() {
               <p className="mb-3 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <Receipt className="h-3 w-3" /> Price breakdown
               </p>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="rounded-xl border-2 border-primary bg-primary/5 p-4 shadow-glow">
                   <p className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
                     <Wallet className="h-3 w-3" /> Seller Price
@@ -128,12 +142,21 @@ export default function ListingDetail() {
                   <p className="mt-1.5 font-display text-3xl font-extrabold text-primary">₦{listing.price.toLocaleString()}</p>
                   <p className="text-[11px] text-muted-foreground">Original price seller entered</p>
                 </div>
+                {listing.priceOfNew != null && (
+                  <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
+                    <p className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      <BadgeCheck className="h-3 w-3" /> Admin Price
+                    </p>
+                    <p className="mt-1.5 font-display text-2xl font-bold text-primary">₦{listing.priceOfNew.toLocaleString()}</p>
+                    <p className="text-[11px] text-muted-foreground">Price set at approval</p>
+                  </div>
+                )}
                 <div className="rounded-xl border border-border/60 bg-card p-4">
                   <p className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    <TrendingUp className="h-3 w-3" /> Listing Price
+                    <TrendingUp className="h-3 w-3" /> Buyer Price
                   </p>
-                  <p className="mt-1.5 font-display text-2xl font-bold text-foreground">₦{Math.round(listing.price * 1.15).toLocaleString()}</p>
-                  <p className="text-[11px] text-muted-foreground">Buyer pays (Seller +15%)</p>
+                  <p className="mt-1.5 font-display text-2xl font-bold text-foreground">₦{(listing.buyerPrice || Math.round(listing.price * 1.15)).toLocaleString()}</p>
+                  <p className="text-[11px] text-muted-foreground">What the buyer pays (incl. markup)</p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-card p-4">
                   <p className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-success">
@@ -148,21 +171,51 @@ export default function ListingDetail() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field icon={User} label="Author">{listing.author}</Field>
               <Field icon={Tag} label="Category">{listing.category}</Field>
+              <Field icon={BookMarked} label="Format">{listing.format || "—"}</Field>
+              <Field icon={Hash} label="ISBN">{listing.isbn || "—"}</Field>
               <Field icon={Hash} label="Quantity">{listing.quantity}</Field>
               <Field icon={Tag} label="Condition">{listing.condition}</Field>
+              <Field icon={MapPin} label="Location">{listing.location || "—"}</Field>
               <Field icon={Calendar} label="Submitted">{listing.date.slice(0, 10)}</Field>
+              {listing.dateModified && (
+                <Field icon={Calendar} label="Last updated">{listing.dateModified.slice(0, 10)}</Field>
+              )}
             </div>
 
+            {listing.tags.length > 0 && (
+              <Field icon={Tag} label="Tags" full>{listing.tags.join(", ")}</Field>
+            )}
+
             {listing.description && (
-              <Field icon={FileText} label="Condition note" full>{listing.description}</Field>
+              <Field icon={FileText} label="Description" full>{listing.description}</Field>
+            )}
+            {listing.conditionDetail && (
+              <Field icon={FileText} label="Condition note" full>{listing.conditionDetail}</Field>
             )}
             {listing.loveNote && (
               <Field icon={Heart} label="Love note" full>{listing.loveNote}</Field>
             )}
 
-            <div className="rounded-xl border border-border/60 bg-card p-4">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Seller</p>
-              <p className="font-semibold text-foreground">{listing.seller}</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-border/60 bg-card p-4">
+                <p className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Store className="h-3 w-3" /> Store
+                </p>
+                <p className="text-sm font-semibold text-foreground">{listing.storeName || "—"}</p>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-card p-4">
+                <p className="mb-1 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Package className="h-3 w-3" /> Fulfillment
+                </p>
+                <p className="text-sm text-foreground">{listing.fulfillmentOption || "—"}</p>
+                {listing.pickupAddress && <p className="text-xs text-muted-foreground">{listing.pickupAddress}</p>}
+              </div>
+              <div className="rounded-xl border border-border/60 bg-card p-4 sm:col-span-2">
+                <p className="mb-2 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <BadgeCheck className="h-3 w-3" /> Seller
+                </p>
+                <p className="font-semibold text-foreground">{listing.seller}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -178,6 +231,26 @@ export default function ListingDetail() {
             <Button variant="outline" onClick={() => setRejecting(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleReject} disabled={decline.isPending}>
               {decline.isPending ? "Rejecting…" : "Reject"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={approving} onOpenChange={setApproving}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Approve listing</DialogTitle></DialogHeader>
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            value={newPrice}
+            onChange={(e) => setNewPrice(e.target.value)}
+            placeholder="Optional new price (₦) — leave blank to keep current"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproving(false)}>Cancel</Button>
+            <Button onClick={confirmApprove} disabled={approve.isPending}>
+              {approve.isPending ? "Approving…" : "Approve"}
             </Button>
           </DialogFooter>
         </DialogContent>

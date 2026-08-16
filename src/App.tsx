@@ -12,6 +12,8 @@ import Users from "@/admin/pages/Users";
 import UserProfile from "@/admin/pages/UserProfile";
 import Listings from "@/admin/pages/Listings";
 import Orders from "@/admin/pages/Orders";
+import Disputes from "@/admin/pages/Disputes";
+import DisputeDetail from "@/admin/pages/DisputeDetail";
 import Inventory from "@/admin/pages/Inventory";
 import Payments from "@/admin/pages/Payments";
 import PaymentDetail from "@/admin/pages/PaymentDetail";
@@ -56,6 +58,8 @@ const App = () => (
           <Route path="/admin/listings/:id" element={adminWrap(<ListingDetail />)} />
           <Route path="/admin/orders" element={adminWrap(<Orders />)} />
           <Route path="/admin/orders/:id" element={adminWrap(<OrderDetail />)} />
+          <Route path="/admin/disputes" element={adminWrap(<Disputes />)} />
+          <Route path="/admin/disputes/:orderNumber" element={adminWrap(<DisputeDetail />)} />
           <Route path="/admin/inventory" element={adminWrap(<Inventory />)} />
           <Route path="/admin/payments" element={adminWrap(<Payments />)} />
           <Route path="/admin/payments/:id" element={adminWrap(<PaymentDetail />)} />

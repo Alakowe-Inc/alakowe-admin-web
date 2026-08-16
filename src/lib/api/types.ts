@@ -65,8 +65,11 @@ export interface ListingResponse {
   title?: string | null
   isbn?: string | null
   description?: string | null
+  conditionDetail?: string | null
+  format?: string | null
   loveNote?: string | null
   price?: number
+  priceOfNew?: number | null
   quantity?: number
   bookCondition?: BookCondition
   coverImageFileName?: string | null
@@ -77,12 +80,30 @@ export interface ListingResponse {
   isSoldOut?: boolean
   status?: ListingStatus
   categoryName?: string | null
+  tags?: TagResponse[] | null
   createdBy?: string | null
   seller?: string | null
   dateCreated?: string | null
   dateModified?: string | null
   cartItemCount?: number
   wishlistItemCount?: number
+  collectionPriority?: number | null
+  discount?: number | null
+  isDiscountApplied?: boolean
+  buyerPrice?: number
+  stateId?: number | null
+  areaId?: number | null
+  location?: string | null
+  storeProfileId?: number | null
+  storeName?: string | null
+  storeSlug?: string | null
+  sellerUserName?: string | null
+  isSellerOnVacation?: boolean
+  sellerVacationMessage?: string | null
+  fulfillmentOption?: string | null
+  pickupAddressLine?: string | null
+  pickupCity?: string | null
+  pickupState?: string | null
 }
 
 export interface PageLinks {
@@ -389,4 +410,46 @@ export interface PayoutRequestResponsePagedResult {
   hasPreviousPage?: boolean
   hasNextPage?: boolean
   links?: PageLinks
+}
+
+/* ───────── Admin Order Disputes ───────── */
+
+export type AdminDisputeStatus =
+  | "Open"
+  | "UnderReview"
+  | "Resolved"
+  | "Rejected"
+  | "Closed"
+
+export type AdminDisputeDecision =
+  | "RefundBuyer"
+  | "RuleForSeller"
+  | "Close"
+
+export interface AdminDisputeActivityResponse {
+  ts?: string
+  text?: string | null
+}
+
+export interface AdminDisputeResponse {
+  id?: number
+  disputeNumber?: string | null
+  orderId?: number
+  orderNumber?: string | null
+  status?: AdminDisputeStatus
+  reason?: string | null
+  filedBy?: string | null
+  filedByEmail?: string | null
+  sellerName?: string | null
+  amount?: number
+  delivery?: string | null
+  bookTitle?: string | null
+  filedAt?: string
+  dueAt?: string | null
+  evidence?: string[] | null
+  decision?: AdminDisputeDecision | null
+  resolution?: string | null
+  decidedBy?: string | null
+  decidedAt?: string | null
+  activity?: AdminDisputeActivityResponse[] | null
 }
