@@ -912,7 +912,7 @@ const mockDisputes: AdminDisputeResponse[] = seedDisputes.map((d, i) => ({
 export function useAdminDisputes(params?: AdminDisputeFilterParams) {
   return useQuery({
     queryKey: ["admin-disputes", params],
-    queryFn: () => withMock(mockDisputes, () => getAdminDisputesApi(params)),
+    queryFn: () => withMock({ items: mockDisputes, totalCount: mockDisputes.length }, () => getAdminDisputesApi(params)),
   })
 }
 

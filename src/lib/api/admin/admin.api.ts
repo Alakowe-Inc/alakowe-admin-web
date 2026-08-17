@@ -635,6 +635,8 @@ export interface AdminDisputeFilterParams {
   Search?: string
   PageNumber?: number
   PageSize?: number
+  FiledFrom?: string
+  FiledTo?: string
 }
 
 export interface AdminDisputeUpdateRequest {
@@ -643,9 +645,13 @@ export interface AdminDisputeUpdateRequest {
   resolution?: string
 }
 
-export async function getAdminDisputesApi(params?: AdminDisputeFilterParams): Promise<AdminDisputeResponse[]> {
-  const { data } = await client.get("/api/v1/admin/disputes", { params })
-  return data as AdminDisputeResponse[]
+export async function getAdminDisputesApi(params?: AdminDisputeFilterParams): Promise<{
+  items: AdminDisputeResponse[]
+  totalCount: number
+}> {
+  const { data, headers } = await client.get("/api/v1/admin/disputes", { params })
+  const totalCount = parseInt(headers["x-total-count"] || "0", 10)
+  return { items: data as AdminDisputeResponse[], totalCount }
 }
 
 export async function getAdminDisputeApi(orderNumber: string): Promise<AdminDisputeResponse> {
