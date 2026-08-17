@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Download, Eye, MessageSquareWarning } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
@@ -6,7 +6,7 @@ import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TimeRangeFilter, defaultRange, type RangeValue } from "@/admin/components/TimeRangeFilter";
-import { Paginator, usePaginated } from "@/admin/components/Paginator";
+import { Paginator } from "@/admin/components/Paginator";
 import { toast } from "react-toastify";
 import { useQuery } from "@tanstack/react-query";
 import { getAdminDisputesApi, type AdminDisputeResponse } from "@/lib/api/admin/admin.api";
@@ -27,10 +27,6 @@ function slaLabel(d: AdminDisputeResponse): string {
 
 export default function Disputes() {
   const navigate = useNavigate();
-  const { data: disputes = [], isLoading, error } = useQuery({
-    queryKey: ["admin-disputes"],
-    queryFn: () => getAdminDisputesApi(),
-  });
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<typeof STATUSES[number]>(
@@ -52,21 +48,23 @@ export default function Disputes() {
     setSearchParams(searchParams, { replace: true });
   };
 
-  const openCount = disputes.filter((d) => d.status === "Open").length;
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["admin-disputes", filter, query, range, page],
+    queryFn: () => getAdminDisputesApi({
+      Status: filter !== "All" ? filter : undefined,
+      Search: query || undefined,
+      FiledFrom: range.from.toISOString(),
+      FiledTo: range.to.toISOString(),
+      PageNumber: page,
+      PageSize: PAGE_SIZE,
+    }),
+  });
 
-  const data = useMemo(() => disputes.filter((d) => {
-    if (filter !== "All" && d.status !== filter) return false;
-    const searchable = `${d.disputeNumber} ${d.orderNumber} ${d.filedBy ?? ""} ${d.sellerName ?? ""} ${d.bookTitle ?? ""} ${d.reason ?? ""}`.toLowerCase();
-    if (query && !searchable.includes(query.toLowerCase())) return false;
-    const filed = d.filedAt ? new Date(d.filedAt).getTime() : 0;
-    if (filed < range.from.getTime() || filed > range.to.getTime()) return false;
-    return true;
-  }), [disputes, filter, query, range]);
-
-  const paged = usePaginated(data, page, PAGE_SIZE);
+  const disputes = data?.items ?? [];
+  const totalCount = data?.totalCount ?? 0;
 
   const exportCsv = () => {
-    const rows = [["Dispute", "Order", "Buyer", "Seller", "Book", "Amount", "Status", "Filed"], ...data.map((d) => [
+    const rows = [["Dispute", "Order", "Buyer", "Seller", "Book", "Amount", "Status", "Filed"], ...disputes.map((d) => [
       d.disputeNumber, d.orderNumber, d.filedBy, d.sellerName, d.bookTitle, moneyInNaira(d.amount), d.status, d.filedAt?.slice(0, 10),
     ])];
     const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -82,11 +80,6 @@ export default function Disputes() {
           <h1 className="font-display text-2xl font-bold text-foreground">Disputes</h1>
           <p className="text-sm text-muted-foreground">
             Review buyer disputes on delivered orders and resolve the escrow.
-            {openCount > 0 && (
-              <span className="ml-2 rounded-full bg-destructive/15 px-2.5 py-0.5 text-[11px] font-semibold text-destructive ring-1 ring-destructive/30">
-                {openCount} awaiting review
-              </span>
-            )}
           </p>
         </div>
       </div>
@@ -109,7 +102,7 @@ export default function Disputes() {
 
       <PageCard
         title="All Disputes"
-        description={isLoading ? "Loading disputes..." : `${data.length} dispute${data.length === 1 ? "" : "s"} match your filters`}
+        description={isLoading ? "Loading disputes..." : `${totalCount} dispute${totalCount === 1 ? "" : "s"} match your filters`}
         bodyClassName="p-0"
       >
         <div className="overflow-x-auto">
@@ -135,7 +128,7 @@ export default function Disputes() {
               {error && !isLoading && (
                 <tr><td colSpan={10} className="px-5 py-12 text-center text-sm text-destructive">Unable to load disputes.</td></tr>
               )}
-              {paged.map((d) => (
+              {disputes.map((d) => (
                 <tr key={d.disputeNumber} onClick={() => navigate(`/admin/disputes/${encodeURIComponent(d.orderNumber ?? "")}`)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40">
                   <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{d.disputeNumber}</td>
                   <td className="px-5 py-3 font-mono text-xs text-foreground">{d.orderNumber}</td>
@@ -153,7 +146,7 @@ export default function Disputes() {
                   </td>
                 </tr>
               ))}
-              {!isLoading && !error && data.length === 0 && (
+              {!isLoading && !error && disputes.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-5 py-12 text-center">
                     <MessageSquareWarning className="mx-auto h-6 w-6 text-muted-foreground/50" />
@@ -165,7 +158,7 @@ export default function Disputes() {
           </table>
         </div>
         <div className="border-t border-border/50 px-4">
-          <Paginator page={page} pageSize={PAGE_SIZE} total={data.length} onPageChange={setPage} />
+          <Paginator page={page} pageSize={PAGE_SIZE} total={totalCount} onPageChange={setPage} />
         </div>
       </PageCard>
     </div>
