@@ -428,6 +428,10 @@ export interface AdminOrderDto {
   preferredSpeedafStationAddress?: string | null
   preferredSpeedafStationCity?: string | null
   sellerDropoffScheduledAt?: string | null
+  checkoutSessionId?: number | null
+  checkoutSessionGuid?: string | null
+  relatedOrdersCount?: number
+  relatedOrders?: AdminOrderSummaryDto[]
   buyer: AdminOrderPartyDto
   seller: AdminOrderPartyDto
   payment: AdminOrderPaymentDto
@@ -459,11 +463,33 @@ export interface AdminOrderSummaryDto {
   buyerName: string
   sellerName: string
   bookTitles: string[]
+  checkoutSessionId?: number | null
+  checkoutSessionGuid?: string | null
+  relatedOrdersCount?: number
 }
 
-export async function getAdminOrdersApi(): Promise<AdminOrderSummaryDto[]> {
-  const { data } = await client.get("/api/v1/admin/orders")
-  return data as AdminOrderSummaryDto[]
+export interface AdminOrderPagedResult {
+  result: AdminOrderSummaryDto[]
+  pageNumber: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+}
+
+export interface AdminOrderFilterParams {
+  status?: string
+  search?: string
+  dateFrom?: string
+  dateTo?: string
+  page?: number
+  pageSize?: number
+}
+
+export async function getAdminOrdersApi(params?: AdminOrderFilterParams): Promise<AdminOrderPagedResult> {
+  const { data } = await client.get("/api/v1/admin/orders", { params })
+  return data as AdminOrderPagedResult
 }
 
 export async function getAdminOrderApi(orderNumber: string): Promise<AdminOrderDto> {
@@ -665,4 +691,71 @@ export async function updateAdminDisputeStatusApi(
 ): Promise<AdminDisputeResponse> {
   const { data } = await client.post(`/api/v1/admin/disputes/${encodeURIComponent(orderNumber)}/status`, body)
   return data as AdminDisputeResponse
+}
+
+/* ───────── Admin Checkout Sessions ───────── */
+
+export interface AdminCheckoutSessionSummaryDto {
+  id: number
+  sessionGuid: string
+  status: string
+  paymentReference?: string
+  totalAmount: number
+  orderCount: number
+  buyerName: string
+  buyerEmail: string
+  createdAt: string
+  orderStatuses: string[]
+}
+
+export interface AdminCheckoutSessionItemDto {
+  id: number
+  listingId: number
+  title: string
+  author?: string
+  coverImageUrl?: string
+  quantity: number
+  unitPrice: number
+  buyerPrice: number
+  sellerEmail: string
+  sellerName: string
+  fulfillmentType: string
+}
+
+export interface AdminCheckoutSessionDetailDto {
+  id: number
+  sessionGuid: string
+  status: string
+  paymentReference?: string
+  totalAmount: number
+  deliveryFee?: number
+  createdAt: string
+  expiresAt?: string
+  shippingAddress: string
+  buyer: AdminOrderPartyDto
+  orders: AdminOrderSummaryDto[]
+  items: AdminCheckoutSessionItemDto[]
+  payment: AdminOrderPaymentDto
+}
+
+export async function getAdminCheckoutSessionsApi(params?: {
+  status?: string
+  search?: string
+  dateFrom?: string
+  dateTo?: string
+  page?: number
+  pageSize?: number
+}): Promise<AdminCheckoutSessionSummaryDto[]> {
+  const { data } = await client.get("/api/v1/admin/checkout-sessions", { params })
+  return data as AdminCheckoutSessionSummaryDto[]
+}
+
+export async function getAdminCheckoutSessionApi(id: number): Promise<AdminCheckoutSessionDetailDto> {
+  const { data } = await client.get(`/api/v1/admin/checkout-sessions/${id}`)
+  return data as AdminCheckoutSessionDetailDto
+}
+
+export async function getOrdersByCheckoutSessionApi(checkoutSessionId: number): Promise<AdminOrderSummaryDto[]> {
+  const { data } = await client.get(`/api/v1/admin/orders/by-checkout/${checkoutSessionId}`)
+  return data as AdminOrderSummaryDto[]
 }

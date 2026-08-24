@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import {
   ArrowLeft, MapPin, CreditCard, Truck, Calendar, MoreHorizontal, Zap,
   Package, User, Mail, Phone, ShieldCheck, Hash, Check, MessageSquareWarning, Scale,
+  LinkIcon,
 } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
@@ -258,6 +259,71 @@ export default function OrderDetail() {
           >
             <Scale className="h-4 w-4" /> Review Dispute
           </Button>
+        </div>
+      )}
+
+      {/* Related Orders from same checkout session */}
+      {(order.relatedOrdersCount ?? 0) > 1 && (
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-soft animate-fade-in">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <LinkIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="font-display text-sm font-bold text-foreground">
+                  This checkout produced {order.relatedOrdersCount} orders
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {order.checkoutSessionGuid ? `Session: ${order.checkoutSessionGuid.slice(0, 8)}...` : "Orders from the same checkout session"}
+                </p>
+              </div>
+            </div>
+            {order.checkoutSessionId && (
+              <Button
+                variant="outline"
+                className="gap-1.5 border-primary/30 bg-card text-primary hover:bg-primary hover:text-primary-foreground"
+                onClick={() => navigate(`/admin/checkout-sessions/${order.checkoutSessionId}`)}
+              >
+                <LinkIcon className="h-4 w-4" /> View All Orders
+              </Button>
+            )}
+          </div>
+          {order.relatedOrders && order.relatedOrders.length > 0 && (
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-primary/10 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <th className="pb-2 pr-4 font-semibold">Order</th>
+                    <th className="pb-2 pr-4 font-semibold">Seller</th>
+                    <th className="pb-2 pr-4 font-semibold">Amount</th>
+                    <th className="pb-2 pr-4 font-semibold">Status</th>
+                    <th className="pb-2 font-semibold">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.relatedOrders.map((ro) => (
+                    <tr
+                      key={ro.orderNumber}
+                      onClick={() => navigate(`/admin/orders/${encodeURIComponent(ro.orderNumber)}`)}
+                      className={`cursor-pointer transition-colors hover:bg-primary/10 ${ro.orderNumber === order.orderNumber ? "bg-primary/5" : ""}`}
+                    >
+                      <td className="py-2 pr-4 font-mono font-semibold text-primary">
+                        {ro.orderNumber}
+                        {ro.orderNumber === order.orderNumber && (
+                          <span className="ml-1.5 text-[10px] text-muted-foreground">(current)</span>
+                        )}
+                      </td>
+                      <td className="py-2 pr-4 text-muted-foreground">{ro.sellerName}</td>
+                      <td className="py-2 pr-4 font-medium text-foreground">₦{moneyInNaira(ro.amount).toLocaleString()}</td>
+                      <td className="py-2 pr-4"><StatusBadge status={ro.status} /></td>
+                      <td className="py-2 text-muted-foreground">{new Date(ro.date).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
