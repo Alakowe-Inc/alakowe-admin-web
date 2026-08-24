@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Download, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { Search, Download, Eye, LinkIcon } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TimeRangeFilter, defaultRange, type RangeValue } from "@/admin/components/TimeRangeFilter";
-import { Paginator, usePaginated } from "@/admin/components/Paginator";
+import { Paginator } from "@/admin/components/Paginator";
 import { toast } from "react-toastify";
 import { useQuery } from "@tanstack/react-query";
 import { getAdminOrdersApi, type AdminOrderSummaryDto } from "@/lib/api/admin/admin.api";
 import { moneyInNaira } from "@/lib/utils";
 
 const STATUSES = ["All", "Pending", "Confirmed", "Processing", "AtHub", "OutboundBooked", "OutForDelivery", "Delivered", "Disputed", "Cancelled"] as const;
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 20;
 
 function orderBooksLabel(order: AdminOrderSummaryDto): string {
   const titles = order.bookTitles ?? [];
@@ -22,16 +22,8 @@ function orderBooksLabel(order: AdminOrderSummaryDto): string {
   return `${titles[0]} + ${titles.length - 1} more`;
 }
 
-function orderBooksSearchText(order: AdminOrderSummaryDto): string {
-  return (order.bookTitles ?? []).join(" ");
-}
-
 export default function Orders() {
   const navigate = useNavigate();
-  const { data: orders = [], isLoading, error } = useQuery({
-    queryKey: ["admin-orders"],
-    queryFn: getAdminOrdersApi,
-  });
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<typeof STATUSES[number]>(
@@ -53,25 +45,24 @@ export default function Orders() {
     setSearchParams(searchParams, { replace: true });
   };
 
-  const data = useMemo(() => orders.filter((o) => {
-    if (filter !== "All") {
-      // Map "Processing" filter to multiple in-progress statuses
-      if (filter === "Processing") {
-        if (!["Paid", "Processing", "In Transit", "Shipped", "AwaitingInbound", "InboundBooked", "InTransitToHub", "Sorted"].includes(o.status)) return false;
-      } else if (o.status !== filter) return false;
-    }
-    const searchable = `${o.orderNumber} ${o.buyerName ?? ""} ${o.sellerName ?? ""} ${orderBooksSearchText(o)}`.toLowerCase();
-    if (query && !searchable.includes(query.toLowerCase())) return false;
-    const d = new Date(o.date).getTime();
-    if (d < range.from.getTime() || d > range.to.getTime()) return false;
-    return true;
-  }), [orders, filter, query, range]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["admin-orders", filter, query, range, page],
+    queryFn: () => getAdminOrdersApi({
+      status: filter !== "All" ? filter : undefined,
+      search: query || undefined,
+      dateFrom: range.from.toISOString(),
+      dateTo: range.to.toISOString(),
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+  });
 
-  const paged = usePaginated(data, page, PAGE_SIZE);
+  const orders = data?.result ?? [];
+  const totalCount = data?.totalCount ?? 0;
 
   const exportCsv = () => {
-    const rows = [["Order", "Buyer", "Seller", "Books", "Amount", "Delivery", "Status", "Date"], ...data.map((o) => [o.orderNumber, o.buyerName, o.sellerName, orderBooksLabel(o), moneyInNaira(o.amount), o.delivery, o.status, o.date])];
-    const csv = rows.map((r) => r.join(",")).join("\n");
+    const rows = [["Order", "Buyer", "Seller", "Books", "Amount", "Delivery", "Status", "Date"], ...orders.map((o) => [o.orderNumber, o.buyerName, o.sellerName, orderBooksLabel(o), moneyInNaira(o.amount), o.delivery, o.status, o.date])];
+    const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `orders-${Date.now()}.csv`; a.click();
     toast("Export ready");
@@ -97,7 +88,7 @@ export default function Orders() {
 
       <PageCard
         title="All Orders"
-        description={isLoading ? "Loading orders..." : `${data.length} order${data.length === 1 ? "" : "s"} match your filters`}
+        description={isLoading ? "Loading orders..." : `${totalCount.toLocaleString()} order${totalCount === 1 ? "" : "s"} match your filters`}
         bodyClassName="p-0"
       >
         <div className="overflow-x-auto">
@@ -110,6 +101,7 @@ export default function Orders() {
                 <th className="px-5 py-3">Books</th>
                 <th className="px-5 py-3">Amount</th>
                 <th className="px-5 py-3">Delivery</th>
+                <th className="px-5 py-3">Checkout</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Date</th>
                 <th className="px-5 py-3"></th>
@@ -117,12 +109,15 @@ export default function Orders() {
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-muted-foreground">Loading orders...</td></tr>
+                <tr><td colSpan={10} className="px-5 py-12 text-center text-sm text-muted-foreground">Loading orders...</td></tr>
               )}
               {error && !isLoading && (
-                <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-destructive">Unable to load orders.</td></tr>
+                <tr><td colSpan={10} className="px-5 py-12 text-center text-sm text-destructive">Unable to load orders.</td></tr>
               )}
-              {paged.map((o) => (
+              {!isLoading && !error && orders.length === 0 && (
+                <tr><td colSpan={10} className="px-5 py-12 text-center text-sm text-muted-foreground">No orders match your filters.</td></tr>
+              )}
+              {orders.map((o) => (
                 <tr key={o.orderNumber} onClick={() => navigate(`/admin/orders/${encodeURIComponent(o.orderNumber)}`)} className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40">
                   <td className="px-5 py-3 font-mono text-xs font-semibold text-primary">{o.orderNumber}</td>
                   <td className="px-5 py-3 font-medium text-foreground">{o.buyerName}</td>
@@ -130,6 +125,20 @@ export default function Orders() {
                   <td className="px-5 py-3 text-muted-foreground">{orderBooksLabel(o)}</td>
                   <td className="px-5 py-3 font-semibold text-foreground">₦{moneyInNaira(o.amount).toLocaleString()}</td>
                   <td className="px-5 py-3 text-muted-foreground">{o.delivery}</td>
+                  <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                    {(o.relatedOrdersCount ?? 0) > 1 ? (
+                      <Link
+                        to={o.checkoutSessionId ? `/admin/checkout-sessions/${o.checkoutSessionId}` : `/admin/orders?filter=same-checkout&sessionId=${o.checkoutSessionId}`}
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary ring-1 ring-primary/20 hover:bg-primary/20 transition-colors"
+                        title={`View all ${o.relatedOrdersCount} orders from this checkout`}
+                      >
+                        <LinkIcon className="h-3 w-3" />
+                        {o.relatedOrdersCount} orders
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3"><StatusBadge status={o.status} /></td>
                   <td className="px-5 py-3 text-muted-foreground">{new Date(o.date).toLocaleDateString()}</td>
                   <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -139,14 +148,11 @@ export default function Orders() {
                   </td>
                 </tr>
               ))}
-              {!isLoading && !error && data.length === 0 && (
-                <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-muted-foreground">No orders match your filters.</td></tr>
-              )}
             </tbody>
           </table>
         </div>
         <div className="border-t border-border/50 px-4">
-          <Paginator page={page} pageSize={PAGE_SIZE} total={data.length} onPageChange={setPage} />
+          <Paginator page={page} pageSize={PAGE_SIZE} total={totalCount} onPageChange={setPage} />
         </div>
       </PageCard>
     </div>

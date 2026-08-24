@@ -70,6 +70,10 @@ import {
   updateAdminDisputeStatusApi,
   type AdminDisputeFilterParams,
   type AdminDisputeUpdateRequest,
+  getAdminCheckoutSessionsApi,
+  getAdminCheckoutSessionApi,
+  getOrdersByCheckoutSessionApi,
+  type AdminCheckoutSessionSummaryDto,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -940,5 +944,43 @@ export function useUpdateAdminDispute() {
       queryClient.invalidateQueries({ queryKey: ["admin-disputes"] })
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] })
     },
+  })
+}
+
+/* ───────── Admin Checkout Sessions ───────── */
+
+const mockCheckoutSessionSummary: AdminCheckoutSessionSummaryDto = {
+  id: 1,
+  sessionGuid: "mock-session-guid",
+  status: "Paid",
+  paymentReference: "pay_mock_ref",
+  totalAmount: 450000,
+  orderCount: 2,
+  buyerName: "Adaeze Okonkwo",
+  buyerEmail: "adaeze@example.com",
+  createdAt: new Date().toISOString(),
+  orderStatuses: ["Paid", "Confirmed"],
+}
+
+export function useAdminCheckoutSessions(params?: { status?: string; search?: string; dateFrom?: string; dateTo?: string; page?: number; pageSize?: number }) {
+  return useQuery({
+    queryKey: ["admin-checkout-sessions", params],
+    queryFn: () => withMock([mockCheckoutSessionSummary], () => getAdminCheckoutSessionsApi(params)),
+  })
+}
+
+export function useAdminCheckoutSession(id: number) {
+  return useQuery({
+    queryKey: ["admin-checkout-sessions", id],
+    queryFn: () => withMock(mockCheckoutSessionSummary, () => getAdminCheckoutSessionApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useOrdersByCheckoutSession(checkoutSessionId: number) {
+  return useQuery({
+    queryKey: ["admin-orders", "by-checkout", checkoutSessionId],
+    queryFn: () => withMock([], () => getOrdersByCheckoutSessionApi(checkoutSessionId)),
+    enabled: !!checkoutSessionId,
   })
 }

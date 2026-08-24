@@ -33,6 +33,8 @@ import CatalogueCategories from "@/admin/pages/CatalogueCategories";
 import CatalogueTags from "@/admin/pages/CatalogueTags";
 import CatalogueCollections from "@/admin/pages/CatalogueCollections";
 import CatalogueLandingPage from "@/admin/pages/CatalogueLandingPage";
+import CheckoutSessions from "@/admin/pages/CheckoutSessions";
+import CheckoutSessionDetail from "@/admin/pages/CheckoutSessionDetail";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,8 @@ const App = () => (
           <Route path="/admin/listings/:id" element={adminWrap(<ListingDetail />)} />
           <Route path="/admin/orders" element={adminWrap(<Orders />)} />
           <Route path="/admin/orders/:id" element={adminWrap(<OrderDetail />)} />
+          <Route path="/admin/checkout-sessions" element={adminWrap(<CheckoutSessions />)} />
+          <Route path="/admin/checkout-sessions/:id" element={adminWrap(<CheckoutSessionDetail />)} />
           <Route path="/admin/disputes" element={adminWrap(<Disputes />)} />
           <Route path="/admin/disputes/:orderNumber" element={adminWrap(<DisputeDetail />)} />
           <Route path="/admin/inventory" element={adminWrap(<Inventory />)} />
