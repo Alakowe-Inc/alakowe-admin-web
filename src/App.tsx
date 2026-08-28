@@ -25,6 +25,7 @@ import Locations from "@/admin/pages/Locations";
 import OrderDetail from "@/admin/pages/OrderDetail";
 import ListingDetail from "@/admin/pages/ListingDetail";
 import PickupDetail from "@/admin/pages/PickupDetail";
+import Feedback from "@/admin/pages/Feedback";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
           <Route path="/admin/dropoffs/books/:id" element={adminWrap(<DropoffDetail />)} />
           <Route path="/admin/dropoffs/centres" element={adminWrap(<DropoffCentres />)} />
           <Route path="/admin/analytics" element={adminWrap(<Analytics />)} />
+          <Route path="/admin/feedback" element={adminWrap(<Feedback />)} />
           <Route path="/admin/reports" element={<Navigate to="/admin/analytics" replace />} />
           <Route path="/admin/locations" element={adminWrap(<Locations />)} />
           <Route path="/admin/settings" element={adminWrap(<Settings />)} />

@@ -21,6 +21,8 @@ const map: Record<string, string> = {
   Scheduled: "bg-info/10 text-info ring-info/20",
   Completed: "bg-success/10 text-success ring-success/20",
   "Pending Verification": "bg-warning/15 text-warning ring-warning/30",
+  Reviewed: "bg-info/10 text-info ring-info/20",
+  Resolved: "bg-success/10 text-success ring-success/20",
 };
 
 export function StatusBadge({ status }: { status: Status }) {

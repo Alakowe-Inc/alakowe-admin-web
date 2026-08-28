@@ -160,3 +160,45 @@ export async function getAreasByStateApi(stateId: number): Promise<AreaResponse[
 //   UpdateAreaRequestDto,
 //   AreaResponse,
 // } from "../types"
+
+// ─── Feedback ────────────────────────────────────────────────────────────────
+
+export interface FeedbackItem {
+  id: string
+  name: string | null
+  email: string | null
+  message: string
+  status: "Pending" | "Reviewed" | "Resolved"
+  dateCreated: string | null
+}
+
+export interface FeedbackPagedResult {
+  result: FeedbackItem[]
+  pageNumber: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+}
+
+export interface GetFeedbackParams {
+  pageNumber?: number
+  pageSize?: number
+  status?: 1 | 2 | 3
+}
+
+export async function getFeedbackApi(params?: GetFeedbackParams): Promise<FeedbackPagedResult> {
+  const { data } = await client.get("/api/v1/admin/AdminFeedback", { params })
+  return data as FeedbackPagedResult
+}
+
+export async function updateFeedbackStatusApi(id: string, status: 1 | 2 | 3): Promise<boolean> {
+  const { data } = await client.patch(`/api/v1/admin/AdminFeedback/${id}/status`, { status })
+  return data as boolean
+}
+
+export async function deleteFeedbackApi(id: string): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/admin/AdminFeedback/${id}`)
+  return data as boolean
+}

@@ -24,7 +24,12 @@ import {
   deleteAreaApi,
   getAreaByIdApi,
   getAreasByStateApi,
+  getFeedbackApi,
+  updateFeedbackStatusApi,
+  deleteFeedbackApi,
   type AdminListingFilterParams,
+  type GetFeedbackParams,
+  type FeedbackPagedResult,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -314,6 +319,63 @@ export function useDeleteArea() {
       withMock(true, () => deleteAreaApi(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-areas"] })
+    },
+  })
+}
+
+// ─── Feedback ────────────────────────────────────────────────────────────────
+
+const mockFeedbackPagedResult: FeedbackPagedResult = {
+  result: [
+    {
+      id: 1,
+      name: "Jane Doe",
+      email: "jane@example.com",
+      message: "Great platform! I love the book selection and easy checkout process.",
+      status: "Pending",
+      dateCreated: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      name: null,
+      email: null,
+      message: "Please add more categories for academic textbooks.",
+      status: "Reviewed",
+      dateCreated: new Date(Date.now() - 86400000).toISOString(),
+    },
+  ],
+  pageNumber: 1,
+  pageSize: 10,
+  totalCount: 2,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+}
+
+export function useAdminFeedback(params?: GetFeedbackParams) {
+  return useQuery({
+    queryKey: ["admin-feedback", params],
+    queryFn: () => withMock(mockFeedbackPagedResult, () => getFeedbackApi(params)),
+  })
+}
+
+export function useUpdateFeedbackStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 1 | 2 | 3 }) =>
+      withMock(true, () => updateFeedbackStatusApi(id, status)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-feedback"] })
+    },
+  })
+}
+
+export function useDeleteFeedback() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => withMock(true, () => deleteFeedbackApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-feedback"] })
     },
   })
 }
