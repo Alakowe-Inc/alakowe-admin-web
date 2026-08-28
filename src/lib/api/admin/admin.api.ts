@@ -185,291 +185,28 @@ export async function getAreasByStateApi(stateId: number): Promise<AreaResponse[
   return data as AreaResponse[]
 }
 
-/* ───────── Admin Delivery Fee Configurations ───────── */
+// export type {
+//   AddStateRequestDto,
+//   UpdateStateRequestDto,
+//   StateResponse,
+//   AddAreaRequestDto,
+//   UpdateAreaRequestDto,
+//   AreaResponse,
+// } from "../types"
 
-export async function createDeliveryFeeConfigApi(
-  body: CreateDeliveryFeeConfigurationRequestDto,
-): Promise<DeliveryFeeConfigurationResponse> {
-  const { data } = await client.post("/api/v1/AdminDeliveryFee/create", body)
-  return data as DeliveryFeeConfigurationResponse
+// ─── Feedback ────────────────────────────────────────────────────────────────
+
+export interface FeedbackItem {
+  id: string
+  name: string | null
+  email: string | null
+  message: string
+  status: "Pending" | "Reviewed" | "Resolved"
+  dateCreated: string | null
 }
 
-export async function updateDeliveryFeeConfigApi(
-  body: UpdateDeliveryFeeConfigurationRequestDto,
-): Promise<DeliveryFeeConfigurationResponse> {
-  const { data } = await client.post("/api/v1/AdminDeliveryFee/update", body)
-  return data as DeliveryFeeConfigurationResponse
-}
-
-export async function deleteDeliveryFeeConfigApi(id: number): Promise<boolean> {
-  const { data } = await client.delete(`/api/v1/AdminDeliveryFee/delete/${id}`)
-  return data as boolean
-}
-
-export async function getDeliveryFeeConfigByIdApi(id: number): Promise<DeliveryFeeConfigurationResponse> {
-  const { data } = await client.get(`/api/v1/AdminDeliveryFee/${id}`)
-  return data as DeliveryFeeConfigurationResponse
-}
-
-export async function getAllDeliveryFeeConfigsApi(): Promise<DeliveryFeeConfigurationResponse[]> {
-  const { data } = await client.get("/api/v1/AdminDeliveryFee/all")
-  return data as DeliveryFeeConfigurationResponse[]
-}
-
-/* ───────── Admin Platform Fee Configurations ───────── */
-
-export async function createPlatformFeeConfigApi(
-  body: CreatePlatformFeeConfigRequestDto,
-): Promise<PlatformFeeConfigResponse> {
-  const { data } = await client.post("/api/v1/AdminPlatformFee/create", body)
-  return data as PlatformFeeConfigResponse
-}
-
-export async function updatePlatformFeeConfigApi(
-  body: UpdatePlatformFeeConfigRequestDto,
-): Promise<PlatformFeeConfigResponse> {
-  const { data } = await client.post("/api/v1/AdminPlatformFee/update", body)
-  return data as PlatformFeeConfigResponse
-}
-
-export async function deletePlatformFeeConfigApi(id: number): Promise<boolean> {
-  const { data } = await client.delete(`/api/v1/AdminPlatformFee/delete/${id}`)
-  return data as boolean
-}
-
-export async function getPlatformFeeConfigByIdApi(id: number): Promise<PlatformFeeConfigResponse> {
-  const { data } = await client.get(`/api/v1/AdminPlatformFee/${id}`)
-  return data as PlatformFeeConfigResponse
-}
-
-export async function getAllPlatformFeeConfigsApi(): Promise<PlatformFeeConfigResponse[]> {
-  const { data } = await client.get("/api/v1/AdminPlatformFee/all")
-  return data as PlatformFeeConfigResponse[]
-}
-
-export async function getActivePlatformFeeConfigApi(): Promise<PlatformFeeConfigResponse> {
-  const { data } = await client.get("/api/v1/AdminPlatformFee/active")
-  return data as PlatformFeeConfigResponse
-}
-
-/* ───────── Admin Tags ───────── */
-
-export async function createTagApi(body: AddTagRequestDto): Promise<TagResponse> {
-  const { data } = await client.post("/api/v1/AdminTag/create", body)
-  return data as TagResponse
-}
-
-export async function updateTagApi(body: UpdateTagRequestDto): Promise<TagResponse> {
-  const { data } = await client.post("/api/v1/AdminTag/update", body)
-  return data as TagResponse
-}
-
-export async function deleteTagApi(id: number): Promise<boolean> {
-  const { data } = await client.delete(`/api/v1/AdminTag/delete/${id}`)
-  return data as boolean
-}
-
-export async function getAllTagsApi(): Promise<TagResponse[]> {
-  const { data } = await client.get("/api/v1/AdminTag/all")
-  return data as TagResponse[]
-}
-
-export async function getTagsByCategoryApi(categoryId: number): Promise<TagResponse[]> {
-  const { data } = await client.get(`/api/v1/AdminTag/by-category/${categoryId}`)
-  return data as TagResponse[]
-}
-
-/* ───────── Admin Collections ───────── */
-
-export async function createCollectionApi(body: AddCollectionRequestDto): Promise<CollectionResponse> {
-  const { data } = await client.post("/api/v1/AdminCollection/create", body)
-  return data as CollectionResponse
-}
-
-export async function updateCollectionApi(body: UpdateCollectionRequestDto): Promise<CollectionResponse> {
-  const { data } = await client.post("/api/v1/AdminCollection/update", body)
-  return data as CollectionResponse
-}
-
-export async function deleteCollectionApi(id: number): Promise<boolean> {
-  const { data } = await client.delete(`/api/v1/AdminCollection/delete/${id}`)
-  return data as boolean
-}
-
-export async function getAllCollectionsApi(): Promise<CollectionResponse[]> {
-  const { data } = await client.get("/api/v1/AdminCollection/all")
-  return data as CollectionResponse[]
-}
-
-export async function assignListingsToCollectionApi(body: AssignListingsToCollectionDto): Promise<boolean> {
-  const { data } = await client.post("/api/v1/AdminCollection/assign-listings", body)
-  return data as boolean
-}
-
-export async function removeListingsFromCollectionApi(body: RemoveListingsFromCollectionDto): Promise<boolean> {
-  const { data } = await client.post("/api/v1/AdminCollection/remove-listings", body)
-  return data as boolean
-}
-
-export async function updateCollectionPriorityApi(body: UpdateCollectionPriorityDto): Promise<boolean> {
-  const { data } = await client.post("/api/v1/AdminCollection/update-priority", body)
-  return data as boolean
-}
-
-/* ───────── Admin Landing Page ───────── */
-
-export async function createLandingPageSectionApi(body: AddLandingPageSectionRequestDto): Promise<LandingPageSectionResponse> {
-  const { data } = await client.post("/api/v1/AdminLandingPage/create", body)
-  return data as LandingPageSectionResponse
-}
-
-export async function updateLandingPageSectionApi(body: UpdateLandingPageSectionRequestDto): Promise<LandingPageSectionResponse> {
-  const { data } = await client.post("/api/v1/AdminLandingPage/update", body)
-  return data as LandingPageSectionResponse
-}
-
-export async function deleteLandingPageSectionApi(id: number): Promise<boolean> {
-  const { data } = await client.delete(`/api/v1/AdminLandingPage/delete/${id}`)
-  return data as boolean
-}
-
-export async function getLandingPageApi(): Promise<any> {
-  const { data } = await client.get("/api/v1/LandingPage/landing-page")
-  return data
-}
-
-/* ───────── Optional Speedaf logistics ───────── */
-
-export interface ShipmentDto {
-  id: number
-  orderId: number
-  leg: string
-  carrier: string
-  status: string
-  speedafBillCode?: string
-  customerOrderNo?: string
-  labelUrl?: string
-  pickupType: number
-  senderName?: string
-  receiverName?: string
-  lastTrackAction?: string
-  lastTrackMessage?: string
-  lastTrackAt?: string
-  bookedAt?: string
-  speedafStationName?: string
-  trackEvents?: Array<{
-    action?: string
-    actionName?: string
-    message?: string
-    messageEng?: string
-    eventTime?: string
-    source: string
-  }>
-}
-
-export interface AdminOrderPartyDto {
-  id?: string
-  name: string
-  email?: string
-  phone?: string
-  address?: string
-  verified: boolean
-}
-
-export interface AdminOrderPaymentDto {
-  method: string
-  reference?: string
-  status?: string
-  channel?: string
-  paidAt?: string
-}
-
-export interface AdminOrderItemDto {
-  id: number
-  listingId: number
-  title: string
-  author?: string
-  category?: string
-  format?: string
-  condition?: string
-  quantity: number
-  unitPrice: number
-  totalPrice: number
-  buyerPrice: number
-  sellerPayout: number
-  platformFee: number
-  coverImageUrl?: string
-}
-
-export interface AdminOrderDto {
-  id: number
-  orderNumber: string
-  status: string
-  amount: number
-  baseAmount: number
-  deliveryFee?: number
-  sellerPayout: number
-  platformFee: number
-  markupTotal: number
-  commissionTotal: number
-  isSettled: boolean
-  settledAt?: string
-  date: string
-  paymentDate?: string
-  shippedDate?: string
-  deliveredDate?: string
-  delivery: "Pickup" | "Drop-off" | "Courier" | string
-  fulfillmentType?: "Courier" | "Pickup" | string
-  shippingAddress?: string
-  pickupAddress?: string | null
-  pickupPreferredDates?: string[] | null
-  preferredSpeedafStationId?: number | null
-  preferredSpeedafStationName?: string | null
-  preferredSpeedafStationAddress?: string | null
-  preferredSpeedafStationCity?: string | null
-  sellerDropoffScheduledAt?: string | null
-  checkoutSessionId?: number | null
-  checkoutSessionGuid?: string | null
-  relatedOrdersCount?: number
-  relatedOrders?: AdminOrderSummaryDto[]
-  buyer: AdminOrderPartyDto
-  seller: AdminOrderPartyDto
-  payment: AdminOrderPaymentDto
-  items: AdminOrderItemDto[]
-  activity: Array<{ ts: string; text: string }>
-  shipments: ShipmentDto[]
-}
-
-export interface OrderShipmentsDto {
-  orderId: number
-  orderStatus: string
-  usesSpeedaf: boolean
-  preferredSpeedafStationId?: number | null
-  preferredSpeedafStationName?: string | null
-  preferredSpeedafStationAddress?: string | null
-  preferredSpeedafStationCity?: string | null
-  sellerDropoffScheduledAt?: string | null
-  shipments: ShipmentDto[]
-}
-
-export interface AdminOrderSummaryDto {
-  id: number
-  orderNumber: string
-  status: string
-  amount: number
-  delivery: "Pickup" | "Drop-off" | "Courier" | string
-  fulfillmentType?: "Courier" | "Pickup" | string
-  date: string
-  buyerName: string
-  sellerName: string
-  bookTitles: string[]
-  checkoutSessionId?: number | null
-  checkoutSessionGuid?: string | null
-  relatedOrdersCount?: number
-}
-
-export interface AdminOrderPagedResult {
-  result: AdminOrderSummaryDto[]
+export interface FeedbackPagedResult {
+  result: FeedbackItem[]
   pageNumber: number
   pageSize: number
   totalCount: number
@@ -478,6 +215,26 @@ export interface AdminOrderPagedResult {
   hasNextPage: boolean
 }
 
+export interface GetFeedbackParams {
+  pageNumber?: number
+  pageSize?: number
+  status?: 1 | 2 | 3
+}
+
+export async function getFeedbackApi(params?: GetFeedbackParams): Promise<FeedbackPagedResult> {
+  const { data } = await client.get("/api/v1/admin/AdminFeedback", { params })
+  return data as FeedbackPagedResult
+}
+
+export async function updateFeedbackStatusApi(id: string, status: 1 | 2 | 3): Promise<boolean> {
+  const { data } = await client.patch(`/api/v1/admin/AdminFeedback/${id}/status`, { status })
+  return data as boolean
+}
+
+export async function deleteFeedbackApi(id: string): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/admin/AdminFeedback/${id}`)
+  return data as boolean
+}
 export interface AdminOrderFilterParams {
   status?: string
   search?: string

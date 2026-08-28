@@ -74,6 +74,7 @@ const App = () => (
           <Route path="/admin/dropoffs/books/:id" element={adminWrap(<DropoffDetail />)} />
           <Route path="/admin/dropoffs/centres" element={adminWrap(<DropoffCentres />)} />
           <Route path="/admin/analytics" element={adminWrap(<Analytics />)} />
+          <Route path="/admin/feedback" element={adminWrap(<Feedback />)} />
           <Route path="/admin/reports" element={<Navigate to="/admin/analytics" replace />} />
           <Route path="/admin/locations" element={adminWrap(<Locations />)} />
           <Route path="/admin/settings" element={adminWrap(<Settings />)} />

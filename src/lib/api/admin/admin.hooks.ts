@@ -25,55 +25,12 @@ import {
   deleteAreaApi,
   getAreaByIdApi,
   getAreasByStateApi,
+  getFeedbackApi,
+  updateFeedbackStatusApi,
+  deleteFeedbackApi,
   type AdminListingFilterParams,
-  createDeliveryFeeConfigApi,
-  updateDeliveryFeeConfigApi,
-  deleteDeliveryFeeConfigApi,
-  getDeliveryFeeConfigByIdApi,
-  getAllDeliveryFeeConfigsApi,
-  createPlatformFeeConfigApi,
-  updatePlatformFeeConfigApi,
-  deletePlatformFeeConfigApi,
-  getPlatformFeeConfigByIdApi,
-  getAllPlatformFeeConfigsApi,
-  getActivePlatformFeeConfigApi,
-  createTagApi,
-  updateTagApi,
-  deleteTagApi,
-  getAllTagsApi,
-  getTagsByCategoryApi,
-  createCollectionApi,
-  updateCollectionApi,
-  deleteCollectionApi,
-  getAllCollectionsApi,
-  assignListingsToCollectionApi,
-  removeListingsFromCollectionApi,
-  updateCollectionPriorityApi,
-  createLandingPageSectionApi,
-  updateLandingPageSectionApi,
-  deleteLandingPageSectionApi,
-  getLandingPageApi,
-  getAdminCustomersByFilterApi,
-  getAdminCustomerByIdApi,
-  verifyCustomerApi,
-  flagCustomerApi,
-  warnCustomerApi,
-  suspendCustomerApi,
-  banCustomerApi,
-  reactivateCustomerApi,
-  type CustomerFilterParams,
-  updatePayoutRequestStatusApi,
-  getAdminPayoutRequestByIdApi,
-  getAdminPayoutRequestsApi,
-  getAdminDisputesApi,
-  getAdminDisputeApi,
-  updateAdminDisputeStatusApi,
-  type AdminDisputeFilterParams,
-  type AdminDisputeUpdateRequest,
-  getAdminCheckoutSessionsApi,
-  getAdminCheckoutSessionApi,
-  getOrdersByCheckoutSessionApi,
-  type AdminCheckoutSessionSummaryDto,
+  type GetFeedbackParams,
+  type FeedbackPagedResult,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -430,6 +387,30 @@ export function useDeleteArea() {
   })
 }
 
+// ─── Feedback ────────────────────────────────────────────────────────────────
+
+const mockFeedbackPagedResult: FeedbackPagedResult = {
+  result: [
+    {
+      id: 1,
+      name: "Jane Doe",
+      email: "jane@example.com",
+      message: "Great platform! I love the book selection and easy checkout process.",
+      status: "Pending",
+      dateCreated: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      name: null,
+      email: null,
+      message: "Please add more categories for academic textbooks.",
+      status: "Reviewed",
+      dateCreated: new Date(Date.now() - 86400000).toISOString(),
+    },
+  ],
+  pageNumber: 1,
+  pageSize: 10,
+  totalCount: 2,
 /* ───────── Admin Delivery Fee Configurations ───────── */
 
 const mockDeliveryFeeConfig: DeliveryFeeConfigurationResponse = {
@@ -786,6 +767,33 @@ const mockCustomerPagedResult: AdminCustomerPagedResult = {
   hasNextPage: false,
 }
 
+export function useAdminFeedback(params?: GetFeedbackParams) {
+  return useQuery({
+    queryKey: ["admin-feedback", params],
+    queryFn: () => withMock(mockFeedbackPagedResult, () => getFeedbackApi(params)),
+  })
+}
+
+export function useUpdateFeedbackStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 1 | 2 | 3 }) =>
+      withMock(true, () => updateFeedbackStatusApi(id, status)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-feedback"] })
+    },
+  })
+}
+
+export function useDeleteFeedback() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => withMock(true, () => deleteFeedbackApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-feedback"] })
+    },
+  })
+}
 export function useAdminCustomers(params?: CustomerFilterParams) {
   return useQuery({
     queryKey: ["admin-customers", params],

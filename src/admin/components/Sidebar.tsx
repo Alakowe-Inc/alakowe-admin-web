@@ -45,6 +45,7 @@ const items = [
 
   { label: "Locations", to: "/admin/locations", icon: MapPin },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
+  { label: "Feedback", to: "/admin/feedback", icon: MessageSquare },
 
   { label: "Settings", to: "/admin/settings", icon: Settings },
 
