@@ -7,6 +7,7 @@ import {
   DropdownMenuRadioItem, DropdownMenuTrigger, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { revenueSeries, userGrowth, categoryBreakdown } from "@/lib/mock-data";
+import { moneyInNaira } from "@/lib/utils";
 import { useAdminStore } from "@/admin/store/adminStore";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart,
@@ -66,7 +67,7 @@ export default function Analytics() {
         <Stat label="Revenue" value={`₦${totalRevenue.toLocaleString()}`} delta="+18.9%" />
         <Stat label="Orders" value={totalOrders.toLocaleString()} delta="+22.3%" />
         <Stat label="Active sellers" value={users.filter((u) => u.role === "Seller").length.toString()} delta="+8.1%" />
-        <Stat label="Payouts" value={`₦${payouts.reduce((s, p) => s + p.amount, 0).toLocaleString()}`} delta="+12.4%" />
+        <Stat label="Payouts" value={`₦${moneyInNaira(payouts.reduce((s, p) => s + p.amount, 0)).toLocaleString()}`} delta="+12.4%" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

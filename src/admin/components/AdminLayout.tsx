@@ -18,6 +18,13 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/reports": { title: "Reports", subtitle: "Export and review platform reports." },
   "/admin/settings": { title: "Settings", subtitle: "Configure platform behaviour and policies." },
   "/admin/locations": { title: "Locations", subtitle: "Manage states and areas for listings and shipping." },
+  "/admin/configuration/delivery-fees": { title: "Configuration", subtitle: "Delivery fee configuration rules." },
+  "/admin/configuration/platform-fees": { title: "Configuration", subtitle: "Platform fee configuration rules." },
+  "/admin/catalogue": { title: "Catalogue", subtitle: "Manage categories, tags, collections and landing page." },
+  "/admin/catalogue/categories": { title: "Categories", subtitle: "Manage book categories and URL slugs." },
+  "/admin/catalogue/tags": { title: "Tags", subtitle: "Manage book tags and category scoping." },
+  "/admin/catalogue/collections": { title: "Collections", subtitle: "Curate listing collections and priorities." },
+  "/admin/catalogue/landing-page": { title: "Landing Page", subtitle: "Configure homepage section layout and ordering." },
   "/admin/insights": { title: "AI Insights", subtitle: "Auto-generated trends, alerts and opportunities." },
 };
 
