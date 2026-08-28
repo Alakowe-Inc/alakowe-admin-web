@@ -22,6 +22,7 @@ import {
   Layers,
   MessageSquareWarning,
   ShoppingCart,
+  MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "./Logo"
