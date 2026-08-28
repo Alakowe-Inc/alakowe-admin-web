@@ -22,6 +22,7 @@ import DropoffBooks from "@/admin/pages/DropoffBooks";
 import DropoffCentres from "@/admin/pages/DropoffCentres";
 import DropoffDetail from "@/admin/pages/DropoffDetail";
 import Analytics from "@/admin/pages/Analytics";
+import Feedback from "@/admin/pages/Feedback";
 import Settings from "@/admin/pages/Settings";
 import Locations from "@/admin/pages/Locations";
 import OrderDetail from "@/admin/pages/OrderDetail";
