@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { withMock } from "../use-mock"
+import { payouts as seedPayouts, disputes as seedDisputes } from "../../mock-data"
 import {
   adminLoginApi,
   adminInitiatePasswordResetApi,
@@ -14,7 +15,22 @@ import {
   declineListingApi,
   getAdminListingsByFilterApi,
   getAdminListingByIdApi,
+  createStateApi,
+  updateStateApi,
+  deleteStateApi,
+  getStateByIdApi,
+  getAllStatesApi,
+  createAreaApi,
+  updateAreaApi,
+  deleteAreaApi,
+  getAreaByIdApi,
+  getAreasByStateApi,
+  getFeedbackApi,
+  updateFeedbackStatusApi,
+  deleteFeedbackApi,
   type AdminListingFilterParams,
+  type GetFeedbackParams,
+  type FeedbackPagedResult,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -27,6 +43,42 @@ import type {
   CategoryResponse,
   ListingResponse,
   ListingResponsePagedResult,
+  AddStateRequestDto,
+  UpdateStateRequestDto,
+  StateResponse,
+  AddAreaRequestDto,
+  UpdateAreaRequestDto,
+  AreaResponse,
+  CreateDeliveryFeeConfigurationRequestDto,
+  UpdateDeliveryFeeConfigurationRequestDto,
+  DeliveryFeeConfigurationResponse,
+  CreatePlatformFeeConfigRequestDto,
+  UpdatePlatformFeeConfigRequestDto,
+  PlatformFeeConfigResponse,
+  AddTagRequestDto,
+  UpdateTagRequestDto,
+  TagResponse,
+  AddCollectionRequestDto,
+  UpdateCollectionRequestDto,
+  CollectionResponse,
+  AssignListingsToCollectionDto,
+  RemoveListingsFromCollectionDto,
+  UpdateCollectionPriorityDto,
+  AddLandingPageSectionRequestDto,
+  UpdateLandingPageSectionRequestDto,
+  LandingPageSectionResponse,
+  AdminCustomerResponse,
+  AdminCustomerDetailResponse,
+  AdminCustomerPagedResult,
+  CustomerModerationRecordResponse,
+  FlagCustomerRequest,
+  WarnCustomerRequest,
+  SuspendCustomerRequest,
+  PayoutRequestResponse,
+  PayoutRequestResponsePagedResult,
+  AdminDisputeResponse,
+  AdminDisputeStatus,
+  AdminDisputeDecision,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -56,7 +108,10 @@ const mockListing: ListingResponse = {
   title: "Mock Listing",
   isbn: "123-4567890123",
   description: "A mock listing",
+  conditionDetail: "Very good condition, clean pages",
+  format: "Paperback",
   price: 250000,
+  buyerPrice: 287500,
   quantity: 1,
   bookCondition: "Good",
   author: "Mock Author",
@@ -65,11 +120,15 @@ const mockListing: ListingResponse = {
   isSoldOut: false,
   status: "PendingApproval",
   categoryName: "Fiction",
+  tags: [{ id: 1, name: "Best Seller", slug: "best-seller", categoryId: 1, categoryName: null }],
   createdBy: "seller@example.com",
   seller: "John Doe",
   dateCreated: new Date().toISOString(),
   cartItemCount: 0,
   wishlistItemCount: 0,
+  location: "Lekki, Lagos",
+  storeName: "Mock Seller's Store",
+  fulfillmentOption: "Courier",
   coverImageFileName: "https://placehold.co/400x600?text=Mock+Book",
   imageFileNames: [
     "https://placehold.co/400x600?text=Mock+Book",
@@ -83,6 +142,32 @@ const mockPagedResult: ListingResponsePagedResult = {
   pageNumber: 1,
   pageSize: 20,
   totalCount: 1,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+}
+
+const mockPayoutRequests: PayoutRequestResponse[] = seedPayouts.map((p, i) => ({
+  id: 901 + i,
+  requestNumber: p.id,
+  orderId: 20480 + i,
+  orderNumber: `ORD-${20480 + i}`,
+  sellerEmail: `${p.seller.toLowerCase().replace(/[^a-z]/g, "")}@example.com`,
+  sellerName: p.seller,
+  amount: p.amount,
+  status: p.status,
+  requestedAt: new Date(Date.now() - i * 86400000).toISOString(),
+  bankName: p.bank?.bankName,
+  accountName: p.bank?.accountName,
+  accountNumber: p.bank?.accountNumber,
+  linkedOrders: [20480 + i],
+}))
+
+const mockPayoutPagedResult: PayoutRequestResponsePagedResult = {
+  result: mockPayoutRequests,
+  pageNumber: 1,
+  pageSize: 20,
+  totalCount: mockPayoutRequests.length,
   totalPages: 1,
   hasPreviousPage: false,
   hasNextPage: false,
@@ -182,8 +267,8 @@ export function useAdminListing(id: number) {
 export function useApproveListing() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) =>
-      withMock(true, () => approveListingApi(id)),
+    mutationFn: (args: { id: number; newPrice?: number }) =>
+      withMock(true, () => approveListingApi(args.id, args.newPrice)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
@@ -193,10 +278,723 @@ export function useApproveListing() {
 export function useDeclineListing() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) =>
-      withMock(true, () => declineListingApi(id)),
+    mutationFn: (args: { id: number; reason?: string }) =>
+      withMock(true, () => declineListingApi(args.id, args.reason)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
+  })
+}
+
+const mockState: StateResponse = { id: 1, name: "Mock State" }
+
+const mockArea: AreaResponse = { id: 1, stateId: 1, name: "Mock Area" }
+
+export function useAllStates() {
+  return useQuery({
+    queryKey: ["admin-states", "all"],
+    queryFn: () => withMock([mockState], () => getAllStatesApi()),
+  })
+}
+
+export function useStateById(id: number) {
+  return useQuery({
+    queryKey: ["admin-states", id],
+    queryFn: () => withMock(mockState, () => getStateByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useCreateState() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddStateRequestDto) =>
+      withMock(mockState, () => createStateApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-states"] })
+    },
+  })
+}
+
+export function useUpdateState() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateStateRequestDto) =>
+      withMock(mockState, () => updateStateApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-states"] })
+    },
+  })
+}
+
+export function useDeleteState() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteStateApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-states"] })
+    },
+  })
+}
+
+export function useAreasByState(stateId: number) {
+  return useQuery({
+    queryKey: ["admin-areas", "by-state", stateId],
+    queryFn: () => withMock([mockArea], () => getAreasByStateApi(stateId)),
+    enabled: !!stateId,
+  })
+}
+
+export function useAreaById(id: number) {
+  return useQuery({
+    queryKey: ["admin-areas", id],
+    queryFn: () => withMock(mockArea, () => getAreaByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useCreateArea() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddAreaRequestDto) =>
+      withMock(mockArea, () => createAreaApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-areas"] })
+    },
+  })
+}
+
+export function useUpdateArea() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateAreaRequestDto) =>
+      withMock(mockArea, () => updateAreaApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-areas"] })
+    },
+  })
+}
+
+export function useDeleteArea() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteAreaApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-areas"] })
+    },
+  })
+}
+
+// ─── Feedback ────────────────────────────────────────────────────────────────
+
+const mockFeedbackPagedResult: FeedbackPagedResult = {
+  result: [
+    {
+      id: "mock-id-1",
+      name: "Jane Doe",
+      email: "jane@example.com",
+      message: "Great platform! I love the book selection and easy checkout process.",
+      status: "Pending",
+      dateCreated: new Date().toISOString(),
+    },
+    {
+      id: "mock-id-2",
+      name: null,
+      email: null,
+      message: "Please add more categories for academic textbooks.",
+      status: "Reviewed",
+      dateCreated: new Date(Date.now() - 86400000).toISOString(),
+    },
+  ],
+  pageNumber: 1,
+  pageSize: 10,
+  totalCount: 2,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+}
+
+export function useAdminFeedback(params?: GetFeedbackParams) {
+  return useQuery({
+    queryKey: ["admin-feedback", params],
+    queryFn: () => withMock(mockFeedbackPagedResult, () => getFeedbackApi(params)),
+  })
+}
+
+export function useUpdateFeedbackStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 1 | 2 | 3 }) =>
+      withMock(true, () => updateFeedbackStatusApi(id, status)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-feedback"] })
+    },
+  })
+}
+
+export function useDeleteFeedback() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => withMock(true, () => deleteFeedbackApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-feedback"] })
+    },
+  })
+}
+
+
+const mockDeliveryFeeConfig: DeliveryFeeConfigurationResponse = {
+  id: 1,
+  originStateId: 1,
+  originAreaId: 1,
+  destinationStateId: 2,
+  destinationAreaId: 2,
+  minWeightGrams: 0,
+  maxWeightGrams: 5000,
+  fee: 1500,
+  cap: 3000,
+  priority: 1,
+}
+
+export function useAllDeliveryFeeConfigs() {
+  return useQuery({
+    queryKey: ["admin-delivery-fee-configs", "all"],
+    queryFn: () => withMock([mockDeliveryFeeConfig], () => getAllDeliveryFeeConfigsApi()),
+  })
+}
+
+export function useDeliveryFeeConfigById(id: number) {
+  return useQuery({
+    queryKey: ["admin-delivery-fee-configs", id],
+    queryFn: () => withMock(mockDeliveryFeeConfig, () => getDeliveryFeeConfigByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useCreateDeliveryFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateDeliveryFeeConfigurationRequestDto) =>
+      withMock(mockDeliveryFeeConfig, () => createDeliveryFeeConfigApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-delivery-fee-configs"] })
+    },
+  })
+}
+
+export function useUpdateDeliveryFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateDeliveryFeeConfigurationRequestDto) =>
+      withMock(mockDeliveryFeeConfig, () => updateDeliveryFeeConfigApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-delivery-fee-configs"] })
+    },
+  })
+}
+
+export function useDeleteDeliveryFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteDeliveryFeeConfigApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-delivery-fee-configs"] })
+    },
+  })
+}
+
+/* ───────── Admin Platform Fee Configurations ───────── */
+
+const mockPlatformFeeConfig: PlatformFeeConfigResponse = {
+  id: 1,
+  markupPercent: 15,
+  markupCap: 5000,
+  commissionPercent: 10,
+  commissionCap: 2000,
+  isActive: true,
+  effectiveFrom: new Date().toISOString(),
+  effectiveTo: null,
+  dateCreated: new Date().toISOString(),
+}
+
+export function useActivePlatformFeeConfig() {
+  return useQuery({
+    queryKey: ["admin-platform-fee-configs", "active"],
+    queryFn: () => withMock(mockPlatformFeeConfig, () => getActivePlatformFeeConfigApi()),
+  })
+}
+
+export function useAllPlatformFeeConfigs() {
+  return useQuery({
+    queryKey: ["admin-platform-fee-configs", "all"],
+    queryFn: () => withMock([mockPlatformFeeConfig], () => getAllPlatformFeeConfigsApi()),
+  })
+}
+
+export function usePlatformFeeConfigById(id: number) {
+  return useQuery({
+    queryKey: ["admin-platform-fee-configs", id],
+    queryFn: () => withMock(mockPlatformFeeConfig, () => getPlatformFeeConfigByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useCreatePlatformFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreatePlatformFeeConfigRequestDto) =>
+      withMock(mockPlatformFeeConfig, () => createPlatformFeeConfigApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-platform-fee-configs"] })
+    },
+  })
+}
+
+export function useUpdatePlatformFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdatePlatformFeeConfigRequestDto) =>
+      withMock(mockPlatformFeeConfig, () => updatePlatformFeeConfigApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-platform-fee-configs"] })
+    },
+  })
+}
+
+export function useDeletePlatformFeeConfig() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deletePlatformFeeConfigApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-platform-fee-configs"] })
+    },
+  })
+}
+
+/* ───────── Admin Tags ───────── */
+
+const mockTag: TagResponse = { id: 1, name: "Mock Tag", slug: "mock-tag", categoryId: null, categoryName: null }
+
+export function useAllTags() {
+  return useQuery({
+    queryKey: ["admin-tags", "all"],
+    queryFn: () => withMock([mockTag], () => getAllTagsApi()),
+  })
+}
+
+export function useTagsByCategory(categoryId: number) {
+  return useQuery({
+    queryKey: ["admin-tags", "by-category", categoryId],
+    queryFn: () => withMock([mockTag], () => getTagsByCategoryApi(categoryId)),
+    enabled: !!categoryId,
+  })
+}
+
+export function useCreateTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddTagRequestDto) =>
+      withMock(mockTag, () => createTagApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tags"] })
+    },
+  })
+}
+
+export function useUpdateTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateTagRequestDto) =>
+      withMock(mockTag, () => updateTagApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tags"] })
+    },
+  })
+}
+
+export function useDeleteTag() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteTagApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tags"] })
+    },
+  })
+}
+
+/* ───────── Admin Collections ───────── */
+
+const mockCollection: CollectionResponse = {
+  id: 1, name: "Mock Collection", slug: "mock-collection",
+  description: "A mock collection", isActive: true,
+}
+
+export function useAllCollections() {
+  return useQuery({
+    queryKey: ["admin-collections", "all"],
+    queryFn: () => withMock([mockCollection], () => getAllCollectionsApi()),
+  })
+}
+
+export function useCreateCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddCollectionRequestDto) =>
+      withMock(mockCollection, () => createCollectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useUpdateCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateCollectionRequestDto) =>
+      withMock(mockCollection, () => updateCollectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useDeleteCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteCollectionApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useAssignListingsToCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AssignListingsToCollectionDto) =>
+      withMock(true, () => assignListingsToCollectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useRemoveListingsFromCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: RemoveListingsFromCollectionDto) =>
+      withMock(true, () => removeListingsFromCollectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+export function useUpdateCollectionPriority() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateCollectionPriorityDto) =>
+      withMock(true, () => updateCollectionPriorityApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-collections"] })
+    },
+  })
+}
+
+/* ───────── Admin Landing Page ───────── */
+
+const mockLandingPageSection: LandingPageSectionResponse = {
+  id: 1, title: "Mock Section", sectionType: "category",
+  filterParam: { category: "fiction" }, listings: [],
+}
+
+export function useLandingPage() {
+  return useQuery({
+    queryKey: ["admin-landing-page"],
+    queryFn: () => withMock({ sections: [] }, () => getLandingPageApi()),
+  })
+}
+
+export function useCreateLandingPageSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddLandingPageSectionRequestDto) =>
+      withMock(mockLandingPageSection, () => createLandingPageSectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-landing-page"] })
+    },
+  })
+}
+
+export function useUpdateLandingPageSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateLandingPageSectionRequestDto) =>
+      withMock(mockLandingPageSection, () => updateLandingPageSectionApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-landing-page"] })
+    },
+  })
+}
+
+export function useDeleteLandingPageSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteLandingPageSectionApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-landing-page"] })
+    },
+  })
+}
+
+/* ───────── Admin Customer Management ───────── */
+
+const mockModerationRecord: CustomerModerationRecordResponse = {
+  reason: "Mock reason",
+  durationDays: 7,
+  date: new Date().toISOString(),
+}
+
+const mockAdminCustomer: AdminCustomerResponse = {
+  id: 1,
+  name: "Adaeze Okonkwo",
+  email: "adaeze.okonkwo@alakowe.app",
+  phoneNumber: "08030000000",
+  avatar: "AO",
+  role: "Seller",
+  verified: false,
+  status: "Active",
+  listingsCount: 2,
+  joined: new Date().toISOString(),
+  lastActive: new Date().toISOString(),
+}
+
+const mockAdminCustomerDetail: AdminCustomerDetailResponse = {
+  ...mockAdminCustomer,
+  address: "1 Mock Street, Lagos",
+  bio: "Reads mostly: Fiction",
+  storeName: null,
+  storeSlug: null,
+  salesCount: 3,
+  purchasesCount: 5,
+  requestsCount: 1,
+  warnings: [mockModerationRecord],
+  suspensionHistory: [],
+}
+
+const mockCustomerPagedResult: AdminCustomerPagedResult = {
+  result: [mockAdminCustomer],
+  pageNumber: 1,
+  pageSize: 20,
+  totalCount: 1,
+  totalPages: 1,
+  hasPreviousPage: false,
+  hasNextPage: false,
+}
+
+
+export function useAdminCustomers(params?: CustomerFilterParams) {
+  return useQuery({
+    queryKey: ["admin-customers", params],
+    queryFn: () => withMock(mockCustomerPagedResult, () => getAdminCustomersByFilterApi(params)),
+  })
+}
+
+export function useAdminCustomer(id: number) {
+  return useQuery({
+    queryKey: ["admin-customers", id],
+    queryFn: () => withMock(mockAdminCustomerDetail, () => getAdminCustomerByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useVerifyCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => withMock(true, () => verifyCustomerApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useFlagCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => withMock(true, () => flagCustomerApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useWarnCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: WarnCustomerRequest & { id: number }) =>
+      withMock(true, () => warnCustomerApi(body.id, { reason: body.reason })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useSuspendCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: SuspendCustomerRequest & { id: number }) =>
+      withMock(true, () => suspendCustomerApi(body.id, { reason: body.reason, durationDays: body.durationDays })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useBanCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => withMock(true, () => banCustomerApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useReactivateCustomer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => withMock(true, () => reactivateCustomerApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] })
+    },
+  })
+}
+
+export function useAdminPayoutRequests(status?: string) {
+  return useQuery({
+    queryKey: ["admin-payout-requests", status ?? "All"],
+    queryFn: () => withMock(mockPayoutPagedResult, () => getAdminPayoutRequestsApi(status)),
+  })
+}
+
+export function useAdminPayoutRequest(id: number) {
+  return useQuery({
+    queryKey: ["admin-payout-requests", id],
+    queryFn: () => withMock(mockPayoutRequests.find((p) => p.id === id) ?? mockPayoutRequests[0], () => getAdminPayoutRequestByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useUpdatePayoutRequestStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { id: number; status: string }) =>
+      withMock(true, () => updatePayoutRequestStatusApi(args.id, args.status)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-payout-requests"] })
+    },
+  })
+}
+
+/* ───────── Admin Order Disputes ───────── */
+
+const mockDisputes: AdminDisputeResponse[] = seedDisputes.map((d, i) => ({
+  id: 7000 + i,
+  disputeNumber: d.id,
+  orderId: 20480 + i,
+  orderNumber: d.orderNumber,
+  status: d.status,
+  reason: d.reason,
+  filedBy: d.filedBy,
+  sellerName: d.seller,
+  amount: d.amount,
+  delivery: d.delivery,
+  bookTitle: d.book,
+  filedAt: d.filedAt,
+  dueAt: d.dueAt,
+  evidence: d.evidence,
+  decision: d.status === "Resolved" ? "RefundBuyer" : d.status === "Rejected" ? "RuleForSeller" : null,
+  resolution: d.resolution,
+  decidedBy: d.decidedBy,
+  decidedAt: d.decidedAt,
+  activity: d.activity ?? [],
+}))
+
+export function useAdminDisputes(params?: AdminDisputeFilterParams) {
+  return useQuery({
+    queryKey: ["admin-disputes", params],
+    queryFn: () => withMock({ items: mockDisputes, totalCount: mockDisputes.length }, () => getAdminDisputesApi(params)),
+  })
+}
+
+export function useAdminDispute(orderNumber: string) {
+  return useQuery({
+    queryKey: ["admin-disputes", orderNumber],
+    queryFn: () =>
+      withMock(
+        mockDisputes.find((d) => d.orderNumber === orderNumber) ?? mockDisputes[0],
+        () => getAdminDisputeApi(orderNumber),
+      ),
+    enabled: !!orderNumber,
+  })
+}
+
+export function useUpdateAdminDispute() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { orderNumber: string; body: AdminDisputeUpdateRequest }) =>
+      withMock(
+        { ...(mockDisputes.find((d) => d.orderNumber === args.orderNumber) ?? mockDisputes[0]), ...args.body } as AdminDisputeResponse,
+        () => updateAdminDisputeStatusApi(args.orderNumber, args.body),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-disputes"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] })
+    },
+  })
+}
+
+/* ───────── Admin Checkout Sessions ───────── */
+
+const mockCheckoutSessionSummary: AdminCheckoutSessionSummaryDto = {
+  id: 1,
+  sessionGuid: "mock-session-guid",
+  status: "Paid",
+  paymentReference: "pay_mock_ref",
+  totalAmount: 450000,
+  orderCount: 2,
+  buyerName: "Adaeze Okonkwo",
+  buyerEmail: "adaeze@example.com",
+  createdAt: new Date().toISOString(),
+  orderStatuses: ["Paid", "Confirmed"],
+}
+
+export function useAdminCheckoutSessions(params?: { status?: string; search?: string; dateFrom?: string; dateTo?: string; page?: number; pageSize?: number }) {
+  return useQuery({
+    queryKey: ["admin-checkout-sessions", params],
+    queryFn: () => withMock([mockCheckoutSessionSummary], () => getAdminCheckoutSessionsApi(params)),
+  })
+}
+
+export function useAdminCheckoutSession(id: number) {
+  return useQuery({
+    queryKey: ["admin-checkout-sessions", id],
+    queryFn: () => withMock(mockCheckoutSessionSummary, () => getAdminCheckoutSessionApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useOrdersByCheckoutSession(checkoutSessionId: number) {
+  return useQuery({
+    queryKey: ["admin-orders", "by-checkout", checkoutSessionId],
+    queryFn: () => withMock([], () => getOrdersByCheckoutSessionApi(checkoutSessionId)),
+    enabled: !!checkoutSessionId,
   })
 }
