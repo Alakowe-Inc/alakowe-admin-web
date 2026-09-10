@@ -4,14 +4,16 @@ import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAdminListing, useApproveListing, useDeclineListing } from "@/lib/api/admin/admin.hooks";
+import { useAdminListing, useApproveListing, useDeclineListing, useAllCollections, useAssignListingsToCollection } from "@/lib/api/admin/admin.hooks";
 import { toAdminListing } from "@/lib/api/admin/admin-adapter";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { AdminNote } from "@/admin/components/AdminNote";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function ListingDetail() {
@@ -21,11 +23,14 @@ export default function ListingDetail() {
   const listing = listingResponse ? toAdminListing(listingResponse) : null;
   const approve = useApproveListing();
   const decline = useDeclineListing();
+  const { data: collections, isLoading: collectionsLoading } = useAllCollections();
+  const assignListings = useAssignListingsToCollection();
 
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const [approving, setApproving] = useState(false);
   const [newPrice, setNewPrice] = useState("");
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<number>>(new Set());
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const isMock = import.meta.env.VITE_USE_MOCK === "true";
@@ -45,6 +50,25 @@ export default function ListingDetail() {
     : listing.images;
   const locked = listing.status !== "Pending";
 
+  function resetApproveForm() {
+    setNewPrice("");
+    setSelectedCollectionIds(new Set());
+  }
+
+  function handleApprovingChange(open: boolean) {
+    setApproving(open);
+    if (!open) resetApproveForm();
+  }
+
+  function toggleCollection(collectionId: number) {
+    setSelectedCollectionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(collectionId)) next.delete(collectionId);
+      else next.add(collectionId);
+      return next;
+    });
+  }
+
   async function confirmApprove() {
     try {
       const raw = newPrice.trim();
@@ -56,10 +80,34 @@ export default function ListingDetail() {
           return;
         }
       }
-      await approve.mutateAsync({ id: Number(id), newPrice: parsed });
-      toast.success(parsed !== undefined ? `Listing approved with new price` : "Listing approved");
+      const listingId = Number(id);
+      await approve.mutateAsync({ id: listingId, newPrice: parsed });
+
+      if (selectedCollectionIds.size > 0) {
+        try {
+          await Promise.all(
+            Array.from(selectedCollectionIds).map((collectionId) =>
+              assignListings.mutateAsync({
+                collectionId,
+                listings: [{ listingId }],
+              }),
+            ),
+          );
+          toast.success(
+            parsed !== undefined
+              ? `Listing approved with new price and added to ${selectedCollectionIds.size} collection(s)`
+              : `Listing approved and added to ${selectedCollectionIds.size} collection(s)`,
+          );
+        } catch {
+          toast.success("Listing approved");
+          toast.error("Approved, but failed to add to collection(s). Retry from Catalogue > Collections.");
+          return;
+        }
+      } else {
+        toast.success(parsed !== undefined ? `Listing approved with new price` : "Listing approved");
+      }
       setApproving(false);
-      setNewPrice("");
+      resetApproveForm();
     } catch {
       toast.error("Failed to approve listing");
     }
@@ -236,21 +284,65 @@ export default function ListingDetail() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={approving} onOpenChange={setApproving}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Approve listing</DialogTitle></DialogHeader>
-          <Input
-            type="number"
-            min={0}
-            step="0.01"
-            value={newPrice}
-            onChange={(e) => setNewPrice(e.target.value)}
-            placeholder="Optional new price (₦) — leave blank to keep current"
-          />
+      <Dialog open={approving} onOpenChange={handleApprovingChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve listing</DialogTitle>
+            <DialogDescription>Optionally set a new price and add this listing to collections.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="approve-new-price">New price (₦)</Label>
+              <Input
+                id="approve-new-price"
+                type="number"
+                min={0}
+                step="0.01"
+                value={newPrice}
+                onChange={(e) => setNewPrice(e.target.value)}
+                placeholder="Optional — leave blank to keep current"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Add to collections (optional)</Label>
+              {collectionsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading collections...</p>
+              ) : !collections || collections.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No collections yet. Create one under Catalogue &gt; Collections.</p>
+              ) : (
+                <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
+                  {collections.map((c) => {
+                    const collectionId = c.id!;
+                    const checked = selectedCollectionIds.has(collectionId);
+                    return (
+                      <label
+                        key={collectionId}
+                        className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-muted/60 ${checked ? "bg-primary/5" : ""}`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleCollection(collectionId)}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-foreground">{c.name}</span>
+                          <span className="block truncate font-mono text-[11px] text-muted-foreground">/{c.slug}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              {selectedCollectionIds.size > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedCollectionIds.size} collection(s) selected. The listing is approved first, then added.
+                </p>
+              )}
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApproving(false)}>Cancel</Button>
-            <Button onClick={confirmApprove} disabled={approve.isPending}>
-              {approve.isPending ? "Approving…" : "Approve"}
+            <Button variant="outline" onClick={() => handleApprovingChange(false)}>Cancel</Button>
+            <Button onClick={confirmApprove} disabled={approve.isPending || assignListings.isPending}>
+              {approve.isPending ? "Approving…" : assignListings.isPending ? "Adding to collection…" : "Approve"}
             </Button>
           </DialogFooter>
         </DialogContent>
