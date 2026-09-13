@@ -25,7 +25,7 @@ const STATUS_FILTER_MAP: Record<(typeof FILTERS)[number], ListingStatus | undefi
   Suspended: "Unpublished",
 }
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 20;
 
 function Cover({ listing }: { listing: AdminListingDisplay }) {
   if (listing.coverImage) return <img src={listing.coverImage} alt={listing.title} loading="lazy" className="h-full w-full object-cover" />;
@@ -40,17 +40,19 @@ export default function Listings() {
   const [filter, setFilter] = useState<typeof FILTERS[number]>(
     initial && (FILTERS as readonly string[]).includes(initial) ? initial : "Pending"
   );
+  const [page, setPage] = useState(1);
 
-  const { data: pagedResult } = useAdminListings(
-    STATUS_FILTER_MAP[filter] ? { Status: STATUS_FILTER_MAP[filter] } : undefined
-  );
+  const { data: pagedResult } = useAdminListings({
+    ...(STATUS_FILTER_MAP[filter] ? { Status: STATUS_FILTER_MAP[filter] } : {}),
+    PageNumber: page,
+    PageSize: PAGE_SIZE,
+  });
   const approve = useApproveListing();
   const decline = useDeclineListing();
 
   const [view, setView] = useState<"grid" | "table">("table");
   const [query, setQuery] = useState("");
   const [range, setRange] = useState<RangeValue>(defaultRange());
-  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const s = searchParams.get("status");
@@ -76,7 +78,7 @@ export default function Listings() {
     return true;
   }), [allListings, query]);
 
-  const paged = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paged = data;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -143,9 +145,9 @@ export default function Listings() {
               </article>
             ))}
           </div>
-          <Paginator page={page} pageSize={PAGE_SIZE} total={data.length} onPageChange={setPage} />
+          <Paginator page={pagedResult?.pageNumber ?? page} pageSize={PAGE_SIZE} total={pagedResult?.totalCount ?? data.length} onPageChange={setPage} />
         </>
-      ) : (
+       ) : (
         <PageCard title="Listings" bodyClassName="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -187,7 +189,7 @@ export default function Listings() {
             </table>
           </div>
           <div className="border-t border-border/60 px-4">
-            <Paginator page={page} pageSize={PAGE_SIZE} total={data.length} onPageChange={setPage} />
+            <Paginator page={pagedResult?.pageNumber ?? page} pageSize={PAGE_SIZE} total={pagedResult?.totalCount ?? data.length} onPageChange={setPage} />
           </div>
         </PageCard>
       )}
