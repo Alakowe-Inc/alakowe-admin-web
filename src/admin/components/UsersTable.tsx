@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Filter, Download, Eye, ShieldCheck, ChevronDown } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
@@ -18,33 +18,40 @@ import { toast } from "react-toastify";
 
 interface Props { title: string; description: string; }
 
-const PAGE_SIZE = 8;
+const DEFAULT_PAGE_SIZE = 30;
 const STATUS_FILTERS = ["All", "Active", "Verified", "Flagged", "Suspended", "Banned", "Pending"] as const;
 
 export function UsersTable({ title, description }: Props) {
   const navigate = useNavigate();
 
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [status, setStatus] = useState<typeof STATUS_FILTERS[number]>("All");
   const [page, setPage] = useState(1);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  const { data: pagedResult, isLoading } = useAdminCustomers(
-    status !== "All" ? { Status: status } : undefined
-  );
+  useEffect(() => {
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(debounceTimer.current);
+  }, [query]);
 
-  useEffect(() => { setPage(1); }, [query, status]);
+  const { data: pagedResult, isLoading } = useAdminCustomers({
+    ...(status !== "All" ? { Status: status } : {}),
+    ...(debouncedQuery ? { Search: debouncedQuery } : {}),
+    PageNumber: page,
+    PageSize: DEFAULT_PAGE_SIZE,
+  });
+
+  useEffect(() => { setPage(1); }, [debouncedQuery, status]);
 
   const customers = useMemo(
     () => (pagedResult?.result ?? []).map(toAdminCustomer),
     [pagedResult]
   );
 
-  const data = useMemo(() => customers.filter((u) => {
-    if (query && !`${u.name} ${u.email} ${u.id}`.toLowerCase().includes(query.toLowerCase())) return false;
-    return true;
-  }), [customers, query]);
-
-  const paged = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalCount = pagedResult?.totalCount ?? 0;
+  const pageSize = pagedResult?.pageSize ?? DEFAULT_PAGE_SIZE;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -105,9 +112,9 @@ export function UsersTable({ title, description }: Props) {
                     ))}
                   </tr>
                 ))
-              ) : paged.length === 0 ? (
+              ) : customers.length === 0 ? (
                 <tr><td colSpan={5} className="px-5 py-12 text-center text-sm text-muted-foreground">No users match your filters.</td></tr>
-              ) : paged.map((u) => (
+              ) : customers.map((u) => (
                 <tr
                   key={u.id}
                   className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40 animate-fade-in"
@@ -141,7 +148,7 @@ export function UsersTable({ title, description }: Props) {
           </table>
         </div>
         <div className="border-t border-border/60 px-4">
-          <Paginator page={page} pageSize={PAGE_SIZE} total={data.length} onPageChange={setPage} />
+          <Paginator page={page} pageSize={pageSize} total={totalCount} onPageChange={setPage} />
         </div>
       </PageCard>
     </div>
