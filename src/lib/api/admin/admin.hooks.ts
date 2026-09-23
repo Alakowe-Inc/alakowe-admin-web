@@ -31,7 +31,7 @@ import {
   type AdminListingFilterParams,
   type GetFeedbackParams,
   type FeedbackPagedResult,
-    createDeliveryFeeConfigApi,
+  createDeliveryFeeConfigApi,
   updateDeliveryFeeConfigApi,
   deleteDeliveryFeeConfigApi,
   getDeliveryFeeConfigByIdApi,
@@ -66,7 +66,6 @@ import {
   suspendCustomerApi,
   banCustomerApi,
   reactivateCustomerApi,
-  type CustomerFilterParams,
   updatePayoutRequestStatusApi,
   getAdminPayoutRequestByIdApi,
   getAdminPayoutRequestsApi,
@@ -79,6 +78,17 @@ import {
   getAdminCheckoutSessionApi,
   getOrdersByCheckoutSessionApi,
   type AdminCheckoutSessionSummaryDto,
+  createVoucherApi,
+  updateVoucherApi,
+  deleteVoucherApi,
+  getVoucherByIdApi,
+  getAllVouchersApi,
+  getActiveVouchersApi,
+  getVoucherUsagesApi,
+  type CreateVoucherRequestDto,
+  type UpdateVoucherRequestDto,
+  type VoucherResponse,
+  type VoucherUsageResponse,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -1044,5 +1054,87 @@ export function useOrdersByCheckoutSession(checkoutSessionId: number) {
     queryKey: ["admin-orders", "by-checkout", checkoutSessionId],
     queryFn: () => withMock([], () => getOrdersByCheckoutSessionApi(checkoutSessionId)),
     enabled: !!checkoutSessionId,
+  })
+}
+
+/* ───────── Admin Vouchers ───────── */
+
+const mockVoucher: VoucherResponse = {
+  id: 1,
+  code: "WELCOME10",
+  description: "Welcome discount for new users",
+  discountPercent: 10,
+  amountCap: 200000,
+  minOrderAmount: 500000,
+  maxUses: 100,
+  perUserLimit: 1,
+  validFrom: new Date().toISOString(),
+  validTo: new Date(Date.now() + 30 * 86400000).toISOString(),
+  isActive: true,
+  usageCount: 5,
+  createdBy: "admin@example.com",
+  dateCreated: new Date().toISOString(),
+}
+
+export function useAllVouchers() {
+  return useQuery({
+    queryKey: ["admin-vouchers", "all"],
+    queryFn: () => withMock([mockVoucher], () => getAllVouchersApi()),
+  })
+}
+
+export function useActiveVouchers() {
+  return useQuery({
+    queryKey: ["admin-vouchers", "active"],
+    queryFn: () => withMock([mockVoucher], () => getActiveVouchersApi()),
+  })
+}
+
+export function useVoucherById(id: number) {
+  return useQuery({
+    queryKey: ["admin-vouchers", id],
+    queryFn: () => withMock(mockVoucher, () => getVoucherByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useVoucherUsages(voucherId: number) {
+  return useQuery({
+    queryKey: ["admin-vouchers", voucherId, "usages"],
+    queryFn: () => withMock([], () => getVoucherUsagesApi(voucherId)),
+    enabled: !!voucherId,
+  })
+}
+
+export function useCreateVoucher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateVoucherRequestDto) =>
+      withMock(mockVoucher, () => createVoucherApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers"] })
+    },
+  })
+}
+
+export function useUpdateVoucher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateVoucherRequestDto) =>
+      withMock(mockVoucher, () => updateVoucherApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers"] })
+    },
+  })
+}
+
+export function useDeleteVoucher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteVoucherApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers"] })
+    },
   })
 }

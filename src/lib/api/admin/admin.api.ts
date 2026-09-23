@@ -47,10 +47,15 @@ import type {
   AdminDisputeResponse,
   AdminDisputeStatus,
   AdminDisputeDecision,
+  CreateVoucherRequestDto,
+  UpdateVoucherRequestDto,
+  VoucherResponse,
+  VoucherUsageResponse,
 } from "../types"
 
 export type { CustomerFilterParams } from "../types"
 export type { AdminDisputeResponse, AdminDisputeStatus, AdminDisputeDecision } from "../types"
+export type { CreateVoucherRequestDto, UpdateVoucherRequestDto, VoucherResponse, VoucherUsageResponse } from "../types"
 
 type LoginBody = LoginRequestDto
 type EmailOnlyBody = EmailOnlyRequest
@@ -808,4 +813,45 @@ export async function getAdminCheckoutSessionApi(id: number): Promise<AdminCheck
 export async function getOrdersByCheckoutSessionApi(checkoutSessionId: number): Promise<AdminOrderSummaryDto[]> {
   const { data } = await client.get(`/api/v1/admin/orders/by-checkout/${checkoutSessionId}`)
   return data as AdminOrderSummaryDto[]
+}
+
+/* ───────── Admin Vouchers ───────── */
+
+export async function createVoucherApi(
+  body: CreateVoucherRequestDto,
+): Promise<VoucherResponse> {
+  const { data } = await client.post("/api/v1/admin/voucher/create", body)
+  return data as VoucherResponse
+}
+
+export async function updateVoucherApi(
+  body: UpdateVoucherRequestDto,
+): Promise<VoucherResponse> {
+  const { data } = await client.post("/api/v1/admin/voucher/update", body)
+  return data as VoucherResponse
+}
+
+export async function deleteVoucherApi(id: number): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/admin/voucher/delete/${id}`)
+  return data as boolean
+}
+
+export async function getVoucherByIdApi(id: number): Promise<VoucherResponse> {
+  const { data } = await client.get(`/api/v1/admin/voucher/${id}`)
+  return data as VoucherResponse
+}
+
+export async function getAllVouchersApi(): Promise<VoucherResponse[]> {
+  const { data } = await client.get("/api/v1/admin/voucher/all")
+  return data as VoucherResponse[]
+}
+
+export async function getActiveVouchersApi(): Promise<VoucherResponse[]> {
+  const { data } = await client.get("/api/v1/admin/voucher/active")
+  return data as VoucherResponse[]
+}
+
+export async function getVoucherUsagesApi(id: number): Promise<VoucherUsageResponse[]> {
+  const { data } = await client.get(`/api/v1/admin/voucher/${id}/usages`)
+  return data as VoucherUsageResponse[]
 }
