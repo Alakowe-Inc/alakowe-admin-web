@@ -820,38 +820,38 @@ export async function getOrdersByCheckoutSessionApi(checkoutSessionId: number): 
 export async function createVoucherApi(
   body: CreateVoucherRequestDto,
 ): Promise<VoucherResponse> {
-  const { data } = await client.post("/api/v1/admin/voucher/create", body)
+  const { data } = await client.post("/api/v1/adminvoucher/create", body)
   return data as VoucherResponse
 }
 
 export async function updateVoucherApi(
   body: UpdateVoucherRequestDto,
 ): Promise<VoucherResponse> {
-  const { data } = await client.post("/api/v1/admin/voucher/update", body)
+  const { data } = await client.post("/api/v1/adminvoucher/update", body)
   return data as VoucherResponse
 }
 
 export async function deleteVoucherApi(id: number): Promise<boolean> {
-  const { data } = await client.delete(`/api/v1/admin/voucher/delete/${id}`)
+  const { data } = await client.delete(`/api/v1/adminvoucher/delete/${id}`)
   return data as boolean
 }
 
 export async function getVoucherByIdApi(id: number): Promise<VoucherResponse> {
-  const { data } = await client.get(`/api/v1/admin/voucher/${id}`)
+  const { data } = await client.get(`/api/v1/adminvoucher/${id}`)
   return data as VoucherResponse
 }
 
 export async function getAllVouchersApi(): Promise<VoucherResponse[]> {
-  const { data } = await client.get("/api/v1/admin/voucher/all")
+  const { data } = await client.get("/api/v1/adminvoucher/all")
   return data as VoucherResponse[]
 }
 
 export async function getActiveVouchersApi(): Promise<VoucherResponse[]> {
-  const { data } = await client.get("/api/v1/admin/voucher/active")
+  const { data } = await client.get("/api/v1/adminvoucher/active")
   return data as VoucherResponse[]
 }
 
 export async function getVoucherUsagesApi(id: number): Promise<VoucherUsageResponse[]> {
-  const { data } = await client.get(`/api/v1/admin/voucher/${id}/usages`)
+  const { data } = await client.get(`/api/v1/adminvoucher/${id}/usages`)
   return data as VoucherUsageResponse[]
 }
