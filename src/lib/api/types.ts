@@ -218,6 +218,54 @@ export interface PlatformFeeConfigResponse {
   dateCreated?: string
 }
 
+/* ───────── Admin Vouchers ───────── */
+
+export interface CreateVoucherRequestDto {
+  code?: string | null
+  description?: string | null
+  discountPercent?: number
+  amountCap?: number | null
+  minOrderAmount?: number | null
+  maxUses?: number | null
+  perUserLimit?: number | null
+  validFrom?: string
+  validTo?: string | null
+  isActive?: boolean
+}
+
+export interface UpdateVoucherRequestDto extends CreateVoucherRequestDto {
+  id?: number
+}
+
+export interface VoucherResponse {
+  id?: number
+  code?: string | null
+  description?: string | null
+  discountPercent?: number
+  amountCap?: number | null
+  minOrderAmount?: number | null
+  maxUses?: number | null
+  perUserLimit?: number | null
+  validFrom?: string
+  validTo?: string | null
+  isActive?: boolean
+  usageCount?: number
+  createdBy?: string | null
+  dateCreated?: string
+}
+
+export interface VoucherUsageResponse {
+  id?: number
+  voucherCode?: string | null
+  userId?: number
+  userEmail?: string | null
+  userFullName?: string | null
+  orderId?: number
+  orderNumber?: string | null
+  discountAmount?: number
+  usedAt?: string
+}
+
 /* ───────── Catalogue & Discovery: Tags ───────── */
 
 export interface AddTagRequestDto {

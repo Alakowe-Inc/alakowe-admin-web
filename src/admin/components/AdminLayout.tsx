@@ -10,6 +10,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   "/admin/sellers": { title: "Sellers", subtitle: "Approve, verify and monitor sellers." },
   "/admin/listings": { title: "Listings", subtitle: "Review, approve and moderate book listings." },
   "/admin/orders": { title: "Orders", subtitle: "Track every transaction across the marketplace." },
+  "/admin/vouchers": { title: "Vouchers", subtitle: "Create and manage discount vouchers for checkout." },
   "/admin/inventory": { title: "Inventory", subtitle: "Marketplace-wide book inventory overview." },
   "/admin/payments": { title: "Payments", subtitle: "Revenue, transactions and seller payouts." },
   "/admin/pickups": { title: "Pickup Requests", subtitle: "Schedule and approve seller pickups." },

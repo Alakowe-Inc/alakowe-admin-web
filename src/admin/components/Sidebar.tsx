@@ -36,6 +36,7 @@ const items = [
   { label: "Listings", to: "/admin/listings", icon: BookOpen },
   { label: "Orders", to: "/admin/orders", icon: ShoppingBag },
   { label: "Checkout Sessions", to: "/admin/checkout-sessions", icon: ShoppingCart },
+  { label: "Vouchers", to: "/admin/vouchers", icon: Tag },
   { label: "Disputes", to: "/admin/disputes", icon: MessageSquareWarning },
   { label: "Inventory", to: "/admin/inventory", icon: Boxes },
   { label: "Payments", to: "/admin/payments", icon: CreditCard },
