@@ -244,6 +244,47 @@ export default function ListingDetail() {
               {listing.dateModified && (
                 <Field icon={Calendar} label="Last updated">{listing.dateModified.slice(0, 10)}</Field>
               )}
+              <Field icon={Star} label="Priority" full>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-lg font-bold text-primary">{listing.priority || 0}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {listing.priority > 0 ? "Higher priority — appears first" : "Default priority"}
+                  </span>
+                </div>
+              </Field>
+            </div>
+
+            <div className="rounded-xl border border-border/60 bg-card p-4">
+              <p className="mb-2 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <Star className="h-3 w-3" /> Update Priority
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={priority}
+                  onChange={(e) => setPriorityValue(e.target.value)}
+                  placeholder={`Current: ${listing.priority || 0}`}
+                  className="w-24"
+                />
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    const val = priority !== "" ? parseInt(priority, 10) : 0;
+                    try {
+                      await priorityMutation.mutateAsync({ id: Number(id), priority: val });
+                      toast.success(`Priority updated to ${val}`);
+                      setPriorityValue("");
+                    } catch {
+                      toast.error("Failed to update priority");
+                    }
+                  }}
+                  disabled={priorityMutation.isPending}
+                >
+                  {priorityMutation.isPending ? "Updating…" : "Update"}
+                </Button>
+              </div>
             </div>
 
             {listing.tags.length > 0 && (

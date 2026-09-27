@@ -174,8 +174,8 @@ export default function Listings() {
                    <th className="px-5 py-3">Condition</th>
                    <th className="px-5 py-3">Qty</th>
                    <th className="px-5 py-3">Price</th>
-                   <th className="px-5 py-3">Priority</th>
                    <th className="px-5 py-3">Status</th>
+                   <th className="px-5 py-3">Priority</th>
                    <th className="px-5 py-3">Date</th>
                    <th className="px-5 py-3"></th>
                  </tr>
