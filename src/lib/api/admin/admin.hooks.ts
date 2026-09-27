@@ -13,6 +13,8 @@ import {
   getAllCategoriesApi,
   approveListingApi,
   declineListingApi,
+  publishListingApi,
+  unpublishListingApi,
   setListingPriorityApi,
   getAdminListingsByFilterApi,
   getAdminListingByIdApi,
@@ -343,6 +345,30 @@ export function useDeclineListing() {
       withMock(true, () => declineListingApi(args.id, args.reason)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+    },
+  })
+}
+
+export function usePublishListing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => publishListingApi(id)),
+    onSuccess: (_data, id: number) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-listings", id] })
+    },
+  })
+}
+
+export function useUnpublishListing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => unpublishListingApi(id)),
+    onSuccess: (_data, id: number) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-listings", id] })
     },
   })
 }

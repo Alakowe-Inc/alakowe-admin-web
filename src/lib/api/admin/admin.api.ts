@@ -129,6 +129,16 @@ export async function declineListingApi(id: number, reason?: string): Promise<bo
   return data as boolean
 }
 
+export async function publishListingApi(id: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/publish/${id}`)
+  return data as boolean
+}
+
+export async function unpublishListingApi(id: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/unpublish/${id}`)
+  return data as boolean
+}
+
 export async function setListingPriorityApi(id: number, priority: number): Promise<boolean> {
   const { data } = await client.post(`/api/v1/AdminListing/set-priority/${id}`, { priority })
   return data as boolean

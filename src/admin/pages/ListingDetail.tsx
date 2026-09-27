@@ -4,7 +4,7 @@ import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAdminListing, useApproveListing, useDeclineListing, useAllCollections, useAssignListingsToCollection, useSetListingPriority } from "@/lib/api/admin/admin.hooks";
+import { useAdminListing, useApproveListing, useDeclineListing, usePublishListing, useUnpublishListing, useAllCollections, useAssignListingsToCollection, useSetListingPriority } from "@/lib/api/admin/admin.hooks";
 import { toAdminListing } from "@/lib/api/admin/admin-adapter";
 import { useState } from "react";
 import { toast } from "react-toastify";
@@ -23,6 +23,8 @@ export default function ListingDetail() {
   const listing = listingResponse ? toAdminListing(listingResponse) : null;
   const approve = useApproveListing();
   const decline = useDeclineListing();
+  const publish = usePublishListing();
+  const unpublish = useUnpublishListing();
   const priorityMutation = useSetListingPriority();
   const { data: collections, isLoading: collectionsLoading } = useAllCollections();
   const assignListings = useAssignListingsToCollection();
@@ -153,9 +155,19 @@ export default function ListingDetail() {
               </Button>
             </>
           )}
+          {listing.status === "Approved" && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => unpublish.mutateAsync(Number(id))} disabled={unpublish.isPending}>
+              <Ban className="h-3.5 w-3.5" /> Unpublish
+            </Button>
+          )}
+          {listing.status === "Suspended" && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => publish.mutateAsync(Number(id))} disabled={publish.isPending}>
+              <Check className="h-3.5 w-3.5" /> Publish
+            </Button>
+          )}
           {!isMock && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast("Listing suspended")} disabled>
-              <Ban className="h-3.5 w-3.5" /> Suspend
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast("Edit mode")} disabled>
+              <Edit className="h-3.5 w-3.5" /> Edit
             </Button>
           )}
         </div>
