@@ -26,6 +26,7 @@ export interface AdminListingDisplay {
   pickupAddress: string
   coverImage: string | null
   images: string[]
+  priority: number
 }
 
 const statusMap: Record<string, string> = {
@@ -64,6 +65,7 @@ export function toAdminListing(l: ListingResponse): AdminListingDisplay {
     pickupAddress: [l.pickupAddressLine, l.pickupCity, l.pickupState].filter(Boolean).join(", "),
     coverImage: l.coverImageFileName ?? null,
     images: l.imageFileNames ?? [],
+    priority: l.priority ?? 0,
   }
 }
 

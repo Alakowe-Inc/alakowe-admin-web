@@ -13,6 +13,9 @@ import {
   getAllCategoriesApi,
   approveListingApi,
   declineListingApi,
+  publishListingApi,
+  unpublishListingApi,
+  setListingPriorityApi,
   getAdminListingsByFilterApi,
   getAdminListingByIdApi,
   createStateApi,
@@ -137,6 +140,7 @@ import type {
   AdminDisputeResponse,
   AdminDisputeStatus,
   AdminDisputeDecision,
+  CustomerFilterParams,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -186,14 +190,15 @@ const mockListing: ListingResponse = {
   wishlistItemCount: 0,
   location: "Lekki, Lagos",
   storeName: "Mock Seller's Store",
-  fulfillmentOption: "Courier",
-  coverImageFileName: "https://placehold.co/400x600?text=Mock+Book",
-  imageFileNames: [
-    "https://placehold.co/400x600?text=Mock+Book",
-    "https://placehold.co/400x600?text=Image+2",
-    "https://placehold.co/400x600?text=Image+3",
-  ],
-}
+   fulfillmentOption: "Courier",
+   coverImageFileName: "https://placehold.co/400x600?text=Mock+Book",
+   imageFileNames: [
+     "https://placehold.co/400x600?text=Mock+Book",
+     "https://placehold.co/400x600?text=Image+2",
+     "https://placehold.co/400x600?text=Image+3",
+   ],
+   priority: 0,
+ }
 
 const mockPagedResult: ListingResponsePagedResult = {
   result: [mockListing],
@@ -325,8 +330,8 @@ export function useAdminListing(id: number) {
 export function useApproveListing() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (args: { id: number; newPrice?: number }) =>
-      withMock(true, () => approveListingApi(args.id, args.newPrice)),
+    mutationFn: (args: { id: number; newPrice?: number; priority?: number }) =>
+      withMock(true, () => approveListingApi(args.id, args.newPrice, args.priority)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
@@ -338,6 +343,41 @@ export function useDeclineListing() {
   return useMutation({
     mutationFn: (args: { id: number; reason?: string }) =>
       withMock(true, () => declineListingApi(args.id, args.reason)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+    },
+  })
+}
+
+export function usePublishListing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => publishListingApi(id)),
+    onSuccess: (_data, id: number) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-listings", id] })
+    },
+  })
+}
+
+export function useUnpublishListing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => unpublishListingApi(id)),
+    onSuccess: (_data, id: number) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-listings", id] })
+    },
+  })
+}
+
+export function useSetListingPriority() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { id: number; priority: number }) =>
+      withMock(true, () => setListingPriorityApi(args.id, args.priority)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
