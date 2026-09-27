@@ -1,10 +1,10 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Check, X, Ban, Edit, Bell, User, Calendar, Tag, Heart, FileText, BookOpen, Hash, TrendingUp, Wallet, Receipt, MapPin, Store, BookMarked, Package, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Check, X, Ban, Edit, Bell, User, Calendar, Tag, Heart, FileText, BookOpen, Hash, TrendingUp, Wallet, Receipt, MapPin, Store, BookMarked, Package, BadgeCheck, Star } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAdminListing, useApproveListing, useDeclineListing, useAllCollections, useAssignListingsToCollection } from "@/lib/api/admin/admin.hooks";
+import { useAdminListing, useApproveListing, useDeclineListing, useAllCollections, useAssignListingsToCollection, useSetListingPriority } from "@/lib/api/admin/admin.hooks";
 import { toAdminListing } from "@/lib/api/admin/admin-adapter";
 import { useState } from "react";
 import { toast } from "react-toastify";
@@ -23,6 +23,7 @@ export default function ListingDetail() {
   const listing = listingResponse ? toAdminListing(listingResponse) : null;
   const approve = useApproveListing();
   const decline = useDeclineListing();
+  const priorityMutation = useSetListingPriority();
   const { data: collections, isLoading: collectionsLoading } = useAllCollections();
   const assignListings = useAssignListingsToCollection();
 
@@ -30,6 +31,7 @@ export default function ListingDetail() {
   const [reason, setReason] = useState("");
   const [approving, setApproving] = useState(false);
   const [newPrice, setNewPrice] = useState("");
+  const [priority, setPriorityValue] = useState("");
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<number>>(new Set());
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -52,6 +54,7 @@ export default function ListingDetail() {
 
   function resetApproveForm() {
     setNewPrice("");
+    setPriorityValue("");
     setSelectedCollectionIds(new Set());
   }
 
@@ -81,31 +84,32 @@ export default function ListingDetail() {
         }
       }
       const listingId = Number(id);
-      await approve.mutateAsync({ id: listingId, newPrice: parsed });
+      const parsedPriority = priority !== "" ? parseInt(priority, 10) : undefined;
+      await approve.mutateAsync({ id: listingId, newPrice: parsed, priority: parsedPriority });
 
-      if (selectedCollectionIds.size > 0) {
-        try {
-          await Promise.all(
-            Array.from(selectedCollectionIds).map((collectionId) =>
-              assignListings.mutateAsync({
-                collectionId,
-                listings: [{ listingId }],
-              }),
-            ),
-          );
-          toast.success(
-            parsed !== undefined
-              ? `Listing approved with new price and added to ${selectedCollectionIds.size} collection(s)`
-              : `Listing approved and added to ${selectedCollectionIds.size} collection(s)`,
-          );
-        } catch {
-          toast.success("Listing approved");
-          toast.error("Approved, but failed to add to collection(s). Retry from Catalogue > Collections.");
-          return;
-        }
-      } else {
-        toast.success(parsed !== undefined ? `Listing approved with new price` : "Listing approved");
-      }
+       if (selectedCollectionIds.size > 0) {
+         try {
+           await Promise.all(
+             Array.from(selectedCollectionIds).map((collectionId) =>
+               assignListings.mutateAsync({
+                 collectionId,
+                 listings: [{ listingId }],
+               }),
+             ),
+           );
+           toast.success(
+             parsed !== undefined || parsedPriority !== undefined
+               ? `Listing approved with new price${parsedPriority !== undefined ? ` and priority ${parsedPriority}` : ""} and added to ${selectedCollectionIds.size} collection(s)`
+               : `Listing approved and added to ${selectedCollectionIds.size} collection(s)`,
+           );
+         } catch {
+           toast.success("Listing approved");
+           toast.error("Approved, but failed to add to collection(s). Retry from Catalogue > Collections.");
+           return;
+         }
+       } else {
+         toast.success(parsed !== undefined || parsedPriority !== undefined ? `Listing approved${parsed !== undefined ? ` with new price` : ""}${parsedPriority !== undefined ? ` with priority ${parsedPriority}` : ""}` : "Listing approved");
+       }
       setApproving(false);
       resetApproveForm();
     } catch {
@@ -288,7 +292,7 @@ export default function ListingDetail() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Approve listing</DialogTitle>
-            <DialogDescription>Optionally set a new price and add this listing to collections.</DialogDescription>
+            <DialogDescription>Optionally set a new price, assign a priority, and add this listing to collections.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -301,6 +305,18 @@ export default function ListingDetail() {
                 value={newPrice}
                 onChange={(e) => setNewPrice(e.target.value)}
                 placeholder="Optional — leave blank to keep current"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="approve-priority">Priority</Label>
+              <Input
+                id="approve-priority"
+                type="number"
+                min={0}
+                step="1"
+                value={priority}
+                onChange={(e) => setPriorityValue(e.target.value)}
+                placeholder="Optional — 0 = default, higher = more important"
               />
             </div>
             <div className="space-y-2">

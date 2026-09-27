@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, LayoutGrid, List, Eye, MoreHorizontal, Check, Flag, Pencil } from "lucide-react";
+import { Search, LayoutGrid, List, Eye, MoreHorizontal, Check, Flag, Pencil, Star } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useAdminListings, useApproveListing, useDeclineListing } from "@/lib/api/admin/admin.hooks";
+import { useAdminListings, useApproveListing, useDeclineListing, useSetListingPriority } from "@/lib/api/admin/admin.hooks";
 import { toAdminListing, type AdminListingDisplay } from "@/lib/api/admin/admin-adapter";
 import type { ListingStatus } from "@/lib/api/types";
 import { TimeRangeFilter, defaultRange, type RangeValue } from "@/admin/components/TimeRangeFilter";
@@ -32,6 +32,15 @@ function Cover({ listing }: { listing: AdminListingDisplay }) {
   return <div className="h-full w-full bg-gradient-to-br from-primary/10 to-muted" />;
 }
 
+function PriorityBadge({ priority }: { priority: number }) {
+  if (priority <= 0) return null;
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+      <Star className="h-2.5 w-2.5" /> {priority}
+    </span>
+  );
+}
+
 export default function Listings() {
   const navigate = useNavigate();
 
@@ -49,6 +58,7 @@ export default function Listings() {
   });
   const approve = useApproveListing();
   const decline = useDeclineListing();
+  const setPriority = useSetListingPriority();
 
   const [view, setView] = useState<"grid" | "table">("table");
   const [query, setQuery] = useState("");
@@ -125,6 +135,9 @@ export default function Listings() {
                         <DropdownMenuItem onClick={() => navigate(`/admin/listings/${l.id}`)}><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { approve.mutate({ id: Number(l.id) }); toast("Approved"); }}><Check className="mr-2 h-4 w-4" /> Approve</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { decline.mutate({ id: Number(l.id) }); toast("Declined"); }}><Flag className="mr-2 h-4 w-4" /> Decline</DropdownMenuItem>
+                        {l.priority > 0 && (
+                          <DropdownMenuItem onClick={() => { setPriority.mutate({ id: Number(l.id), priority: 0 }); toast("Priority cleared"); }}><Pencil className="mr-2 h-4 w-4" /> Clear Priority</DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => navigate(`/admin/listings/${l.id}`)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -135,7 +148,10 @@ export default function Listings() {
                   </div>
                 </button>
                 <div className="space-y-1 p-4">
-                  <p className="truncate text-xs text-muted-foreground">by {l.seller}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="truncate text-xs text-muted-foreground">by {l.seller}</p>
+                    <PriorityBadge priority={l.priority} />
+                  </div>
                   <div className="flex items-center justify-between">
                     <p className="font-display text-base font-bold text-primary">₦{l.price.toLocaleString()}</p>
                     <p className="text-[11px] text-muted-foreground">{l.category}</p>
@@ -152,16 +168,17 @@ export default function Listings() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="sticky top-0 z-10 bg-card">
-                <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3">Title</th>
-                  <th className="px-5 py-3">Seller</th>
-                  <th className="px-5 py-3">Condition</th>
-                  <th className="px-5 py-3">Qty</th>
-                  <th className="px-5 py-3">Price</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Date</th>
-                  <th className="px-5 py-3"></th>
-                </tr>
+                 <tr className="border-b border-border/70 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                   <th className="px-5 py-3">Title</th>
+                   <th className="px-5 py-3">Seller</th>
+                   <th className="px-5 py-3">Condition</th>
+                   <th className="px-5 py-3">Qty</th>
+                   <th className="px-5 py-3">Price</th>
+                   <th className="px-5 py-3">Priority</th>
+                   <th className="px-5 py-3">Status</th>
+                   <th className="px-5 py-3">Date</th>
+                   <th className="px-5 py-3"></th>
+                 </tr>
               </thead>
               <tbody>
                 {paged.map((l) => {
@@ -177,8 +194,9 @@ export default function Listings() {
                       <td className="px-5 py-3 text-muted-foreground">{l.condition}</td>
                       <td className="px-5 py-3 font-semibold text-foreground">{l.quantity}</td>
                       <td className="px-5 py-3 font-semibold">₦{l.price.toLocaleString()}</td>
-                      <td className="px-5 py-3"><StatusBadge status={l.status} /></td>
-                      <td className="px-5 py-3 text-muted-foreground">{l.date.slice(0, 10)}</td>
+                       <td className="px-5 py-3"><StatusBadge status={l.status} /></td>
+                       <td className="px-5 py-3">{l.priority > 0 ? <PriorityBadge priority={l.priority} /> : <span className="text-muted-foreground">—</span>}</td>
+                       <td className="px-5 py-3 text-muted-foreground">{l.date.slice(0, 10)}</td>
                       <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => navigate(`/admin/listings/${l.id}`)}><Eye className="h-3.5 w-3.5" /> View</Button>
                       </td>

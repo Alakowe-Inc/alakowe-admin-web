@@ -97,14 +97,15 @@ export interface ListingResponse {
   storeProfileId?: number | null
   storeName?: string | null
   storeSlug?: string | null
-  sellerUserName?: string | null
-  isSellerOnVacation?: boolean
-  sellerVacationMessage?: string | null
-  fulfillmentOption?: string | null
-  pickupAddressLine?: string | null
-  pickupCity?: string | null
-  pickupState?: string | null
-}
+        sellerUserName?: string | null
+        isSellerOnVacation?: boolean
+        sellerVacationMessage?: string | null
+        fulfillmentOption?: string | null
+        pickupAddressLine?: string | null
+        pickupCity?: string | null
+        pickupState?: string | null
+        priority?: number
+    }
 
 export interface PageLinks {
   firstPage?: string | null

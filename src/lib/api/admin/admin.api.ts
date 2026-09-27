@@ -69,6 +69,7 @@ export interface AdminListingFilterParams {
   Title?: string
   Author?: string
   Status?: ListingStatus
+  Priority?: number
   PageNumber?: number
   PageSize?: number
 }
@@ -118,13 +119,18 @@ export async function getAllCategoriesApi(): Promise<CategoryResponse[]> {
   return data as CategoryResponse[]
 }
 
-export async function approveListingApi(id: number, newPrice?: number): Promise<boolean> {
-  const { data } = await client.post(`/api/v1/AdminListing/approve/${id}`, { newPrice })
+export async function approveListingApi(id: number, newPrice?: number, priority?: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/approve/${id}`, { newPrice, priority })
   return data as boolean
 }
 
 export async function declineListingApi(id: number, reason?: string): Promise<boolean> {
   const { data } = await client.post(`/api/v1/AdminListing/decline/${id}`, { rejectionReason: reason ?? "" })
+  return data as boolean
+}
+
+export async function setListingPriorityApi(id: number, priority: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/set-priority/${id}`, { priority })
   return data as boolean
 }
 
