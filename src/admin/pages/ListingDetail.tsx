@@ -1,10 +1,10 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Check, X, Ban, Edit, Bell, User, Calendar, Tag, Heart, FileText, BookOpen, Hash, TrendingUp, Wallet, Receipt, MapPin, Store, BookMarked, Package, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Check, X, Ban, Edit, Bell, User, Calendar, Tag, Heart, FileText, BookOpen, Hash, TrendingUp, Wallet, Receipt, MapPin, Store, BookMarked, Package, BadgeCheck, Star } from "lucide-react";
 import { PageCard } from "@/admin/components/PageCard";
 import { StatusBadge } from "@/admin/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAdminListing, useApproveListing, useDeclineListing, useAllCollections, useAssignListingsToCollection } from "@/lib/api/admin/admin.hooks";
+import { useAdminListing, useApproveListing, useDeclineListing, usePublishListing, useUnpublishListing, useAllCollections, useAssignListingsToCollection, useSetListingPriority } from "@/lib/api/admin/admin.hooks";
 import { toAdminListing } from "@/lib/api/admin/admin-adapter";
 import { useState } from "react";
 import { toast } from "react-toastify";
@@ -23,6 +23,9 @@ export default function ListingDetail() {
   const listing = listingResponse ? toAdminListing(listingResponse) : null;
   const approve = useApproveListing();
   const decline = useDeclineListing();
+  const publish = usePublishListing();
+  const unpublish = useUnpublishListing();
+  const priorityMutation = useSetListingPriority();
   const { data: collections, isLoading: collectionsLoading } = useAllCollections();
   const assignListings = useAssignListingsToCollection();
 
@@ -30,6 +33,7 @@ export default function ListingDetail() {
   const [reason, setReason] = useState("");
   const [approving, setApproving] = useState(false);
   const [newPrice, setNewPrice] = useState("");
+  const [priority, setPriorityValue] = useState("");
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<Set<number>>(new Set());
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -52,6 +56,7 @@ export default function ListingDetail() {
 
   function resetApproveForm() {
     setNewPrice("");
+    setPriorityValue("");
     setSelectedCollectionIds(new Set());
   }
 
@@ -81,31 +86,32 @@ export default function ListingDetail() {
         }
       }
       const listingId = Number(id);
-      await approve.mutateAsync({ id: listingId, newPrice: parsed });
+      const parsedPriority = priority !== "" ? parseInt(priority, 10) : undefined;
+      await approve.mutateAsync({ id: listingId, newPrice: parsed, priority: parsedPriority });
 
-      if (selectedCollectionIds.size > 0) {
-        try {
-          await Promise.all(
-            Array.from(selectedCollectionIds).map((collectionId) =>
-              assignListings.mutateAsync({
-                collectionId,
-                listings: [{ listingId }],
-              }),
-            ),
-          );
-          toast.success(
-            parsed !== undefined
-              ? `Listing approved with new price and added to ${selectedCollectionIds.size} collection(s)`
-              : `Listing approved and added to ${selectedCollectionIds.size} collection(s)`,
-          );
-        } catch {
-          toast.success("Listing approved");
-          toast.error("Approved, but failed to add to collection(s). Retry from Catalogue > Collections.");
-          return;
-        }
-      } else {
-        toast.success(parsed !== undefined ? `Listing approved with new price` : "Listing approved");
-      }
+       if (selectedCollectionIds.size > 0) {
+         try {
+           await Promise.all(
+             Array.from(selectedCollectionIds).map((collectionId) =>
+               assignListings.mutateAsync({
+                 collectionId,
+                 listings: [{ listingId }],
+               }),
+             ),
+           );
+           toast.success(
+             parsed !== undefined || parsedPriority !== undefined
+               ? `Listing approved with new price${parsedPriority !== undefined ? ` and priority ${parsedPriority}` : ""} and added to ${selectedCollectionIds.size} collection(s)`
+               : `Listing approved and added to ${selectedCollectionIds.size} collection(s)`,
+           );
+         } catch {
+           toast.success("Listing approved");
+           toast.error("Approved, but failed to add to collection(s). Retry from Catalogue > Collections.");
+           return;
+         }
+       } else {
+         toast.success(parsed !== undefined || parsedPriority !== undefined ? `Listing approved${parsed !== undefined ? ` with new price` : ""}${parsedPriority !== undefined ? ` with priority ${parsedPriority}` : ""}` : "Listing approved");
+       }
       setApproving(false);
       resetApproveForm();
     } catch {
@@ -149,9 +155,19 @@ export default function ListingDetail() {
               </Button>
             </>
           )}
+          {listing.status === "Approved" && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => unpublish.mutateAsync(Number(id))} disabled={unpublish.isPending}>
+              <Ban className="h-3.5 w-3.5" /> Unpublish
+            </Button>
+          )}
+          {listing.status === "Suspended" && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => publish.mutateAsync(Number(id))} disabled={publish.isPending}>
+              <Check className="h-3.5 w-3.5" /> Publish
+            </Button>
+          )}
           {!isMock && (
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast("Listing suspended")} disabled>
-              <Ban className="h-3.5 w-3.5" /> Suspend
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => toast("Edit mode")} disabled>
+              <Edit className="h-3.5 w-3.5" /> Edit
             </Button>
           )}
         </div>
@@ -228,6 +244,47 @@ export default function ListingDetail() {
               {listing.dateModified && (
                 <Field icon={Calendar} label="Last updated">{listing.dateModified.slice(0, 10)}</Field>
               )}
+              <Field icon={Star} label="Priority" full>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-lg font-bold text-primary">{listing.priority || 0}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {listing.priority > 0 ? "Higher priority — appears first" : "Default priority"}
+                  </span>
+                </div>
+              </Field>
+            </div>
+
+            <div className="rounded-xl border border-border/60 bg-card p-4">
+              <p className="mb-2 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <Star className="h-3 w-3" /> Update Priority
+              </p>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={priority}
+                  onChange={(e) => setPriorityValue(e.target.value)}
+                  placeholder={`Current: ${listing.priority || 0}`}
+                  className="w-24"
+                />
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    const val = priority !== "" ? parseInt(priority, 10) : 0;
+                    try {
+                      await priorityMutation.mutateAsync({ id: Number(id), priority: val });
+                      toast.success(`Priority updated to ${val}`);
+                      setPriorityValue("");
+                    } catch {
+                      toast.error("Failed to update priority");
+                    }
+                  }}
+                  disabled={priorityMutation.isPending}
+                >
+                  {priorityMutation.isPending ? "Updating…" : "Update"}
+                </Button>
+              </div>
             </div>
 
             {listing.tags.length > 0 && (
@@ -288,7 +345,7 @@ export default function ListingDetail() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Approve listing</DialogTitle>
-            <DialogDescription>Optionally set a new price and add this listing to collections.</DialogDescription>
+            <DialogDescription>Optionally set a new price, assign a priority, and add this listing to collections.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -301,6 +358,18 @@ export default function ListingDetail() {
                 value={newPrice}
                 onChange={(e) => setNewPrice(e.target.value)}
                 placeholder="Optional — leave blank to keep current"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="approve-priority">Priority</Label>
+              <Input
+                id="approve-priority"
+                type="number"
+                min={0}
+                step="1"
+                value={priority}
+                onChange={(e) => setPriorityValue(e.target.value)}
+                placeholder="Optional — 0 = default, higher = more important"
               />
             </div>
             <div className="space-y-2">

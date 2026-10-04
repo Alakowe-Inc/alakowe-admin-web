@@ -13,6 +13,9 @@ import {
   getAllCategoriesApi,
   approveListingApi,
   declineListingApi,
+  publishListingApi,
+  unpublishListingApi,
+  setListingPriorityApi,
   getAdminListingsByFilterApi,
   getAdminListingByIdApi,
   createStateApi,
@@ -31,7 +34,7 @@ import {
   type AdminListingFilterParams,
   type GetFeedbackParams,
   type FeedbackPagedResult,
-    createDeliveryFeeConfigApi,
+  createDeliveryFeeConfigApi,
   updateDeliveryFeeConfigApi,
   deleteDeliveryFeeConfigApi,
   getDeliveryFeeConfigByIdApi,
@@ -66,7 +69,6 @@ import {
   suspendCustomerApi,
   banCustomerApi,
   reactivateCustomerApi,
-  type CustomerFilterParams,
   updatePayoutRequestStatusApi,
   getAdminPayoutRequestByIdApi,
   getAdminPayoutRequestsApi,
@@ -79,6 +81,17 @@ import {
   getAdminCheckoutSessionApi,
   getOrdersByCheckoutSessionApi,
   type AdminCheckoutSessionSummaryDto,
+  createVoucherApi,
+  updateVoucherApi,
+  deleteVoucherApi,
+  getVoucherByIdApi,
+  getAllVouchersApi,
+  getActiveVouchersApi,
+  getVoucherUsagesApi,
+  type CreateVoucherRequestDto,
+  type UpdateVoucherRequestDto,
+  type VoucherResponse,
+  type VoucherUsageResponse,
 } from "./admin.api"
 import type {
   LoginRequestDto,
@@ -127,6 +140,7 @@ import type {
   AdminDisputeResponse,
   AdminDisputeStatus,
   AdminDisputeDecision,
+  CustomerFilterParams,
 } from "../types"
 
 type LoginBody = LoginRequestDto
@@ -176,14 +190,15 @@ const mockListing: ListingResponse = {
   wishlistItemCount: 0,
   location: "Lekki, Lagos",
   storeName: "Mock Seller's Store",
-  fulfillmentOption: "Courier",
-  coverImageFileName: "https://placehold.co/400x600?text=Mock+Book",
-  imageFileNames: [
-    "https://placehold.co/400x600?text=Mock+Book",
-    "https://placehold.co/400x600?text=Image+2",
-    "https://placehold.co/400x600?text=Image+3",
-  ],
-}
+   fulfillmentOption: "Courier",
+   coverImageFileName: "https://placehold.co/400x600?text=Mock+Book",
+   imageFileNames: [
+     "https://placehold.co/400x600?text=Mock+Book",
+     "https://placehold.co/400x600?text=Image+2",
+     "https://placehold.co/400x600?text=Image+3",
+   ],
+   priority: 0,
+ }
 
 const mockPagedResult: ListingResponsePagedResult = {
   result: [mockListing],
@@ -315,8 +330,8 @@ export function useAdminListing(id: number) {
 export function useApproveListing() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (args: { id: number; newPrice?: number }) =>
-      withMock(true, () => approveListingApi(args.id, args.newPrice)),
+    mutationFn: (args: { id: number; newPrice?: number; priority?: number }) =>
+      withMock(true, () => approveListingApi(args.id, args.newPrice, args.priority)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
@@ -328,6 +343,41 @@ export function useDeclineListing() {
   return useMutation({
     mutationFn: (args: { id: number; reason?: string }) =>
       withMock(true, () => declineListingApi(args.id, args.reason)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+    },
+  })
+}
+
+export function usePublishListing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => publishListingApi(id)),
+    onSuccess: (_data, id: number) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-listings", id] })
+    },
+  })
+}
+
+export function useUnpublishListing() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => unpublishListingApi(id)),
+    onSuccess: (_data, id: number) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
+      queryClient.invalidateQueries({ queryKey: ["admin-listings", id] })
+    },
+  })
+}
+
+export function useSetListingPriority() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { id: number; priority: number }) =>
+      withMock(true, () => setListingPriorityApi(args.id, args.priority)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-listings"] })
     },
@@ -1044,5 +1094,87 @@ export function useOrdersByCheckoutSession(checkoutSessionId: number) {
     queryKey: ["admin-orders", "by-checkout", checkoutSessionId],
     queryFn: () => withMock([], () => getOrdersByCheckoutSessionApi(checkoutSessionId)),
     enabled: !!checkoutSessionId,
+  })
+}
+
+/* ───────── Admin Vouchers ───────── */
+
+const mockVoucher: VoucherResponse = {
+  id: 1,
+  code: "WELCOME10",
+  description: "Welcome discount for new users",
+  discountPercent: 10,
+  amountCap: 200000,
+  minOrderAmount: 500000,
+  maxUses: 100,
+  perUserLimit: 1,
+  validFrom: new Date().toISOString(),
+  validTo: new Date(Date.now() + 30 * 86400000).toISOString(),
+  isActive: true,
+  usageCount: 5,
+  createdBy: "admin@example.com",
+  dateCreated: new Date().toISOString(),
+}
+
+export function useAllVouchers() {
+  return useQuery({
+    queryKey: ["admin-vouchers", "all"],
+    queryFn: () => withMock([mockVoucher], () => getAllVouchersApi()),
+  })
+}
+
+export function useActiveVouchers() {
+  return useQuery({
+    queryKey: ["admin-vouchers", "active"],
+    queryFn: () => withMock([mockVoucher], () => getActiveVouchersApi()),
+  })
+}
+
+export function useVoucherById(id: number) {
+  return useQuery({
+    queryKey: ["admin-vouchers", id],
+    queryFn: () => withMock(mockVoucher, () => getVoucherByIdApi(id)),
+    enabled: !!id,
+  })
+}
+
+export function useVoucherUsages(voucherId: number) {
+  return useQuery({
+    queryKey: ["admin-vouchers", voucherId, "usages"],
+    queryFn: () => withMock([], () => getVoucherUsagesApi(voucherId)),
+    enabled: !!voucherId,
+  })
+}
+
+export function useCreateVoucher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateVoucherRequestDto) =>
+      withMock(mockVoucher, () => createVoucherApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers"] })
+    },
+  })
+}
+
+export function useUpdateVoucher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateVoucherRequestDto) =>
+      withMock(mockVoucher, () => updateVoucherApi(body)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers"] })
+    },
+  })
+}
+
+export function useDeleteVoucher() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      withMock(true, () => deleteVoucherApi(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-vouchers"] })
+    },
   })
 }

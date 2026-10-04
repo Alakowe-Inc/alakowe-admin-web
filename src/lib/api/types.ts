@@ -97,14 +97,15 @@ export interface ListingResponse {
   storeProfileId?: number | null
   storeName?: string | null
   storeSlug?: string | null
-  sellerUserName?: string | null
-  isSellerOnVacation?: boolean
-  sellerVacationMessage?: string | null
-  fulfillmentOption?: string | null
-  pickupAddressLine?: string | null
-  pickupCity?: string | null
-  pickupState?: string | null
-}
+        sellerUserName?: string | null
+        isSellerOnVacation?: boolean
+        sellerVacationMessage?: string | null
+        fulfillmentOption?: string | null
+        pickupAddressLine?: string | null
+        pickupCity?: string | null
+        pickupState?: string | null
+        priority?: number
+    }
 
 export interface PageLinks {
   firstPage?: string | null
@@ -216,6 +217,54 @@ export interface PlatformFeeConfigResponse {
   effectiveFrom?: string
   effectiveTo?: string | null
   dateCreated?: string
+}
+
+/* ───────── Admin Vouchers ───────── */
+
+export interface CreateVoucherRequestDto {
+  code?: string | null
+  description?: string | null
+  discountPercent?: number
+  amountCap?: number | null
+  minOrderAmount?: number | null
+  maxUses?: number | null
+  perUserLimit?: number | null
+  validFrom?: string
+  validTo?: string | null
+  isActive?: boolean
+}
+
+export interface UpdateVoucherRequestDto extends CreateVoucherRequestDto {
+  id?: number
+}
+
+export interface VoucherResponse {
+  id?: number
+  code?: string | null
+  description?: string | null
+  discountPercent?: number
+  amountCap?: number | null
+  minOrderAmount?: number | null
+  maxUses?: number | null
+  perUserLimit?: number | null
+  validFrom?: string
+  validTo?: string | null
+  isActive?: boolean
+  usageCount?: number
+  createdBy?: string | null
+  dateCreated?: string
+}
+
+export interface VoucherUsageResponse {
+  id?: number
+  voucherCode?: string | null
+  userId?: number
+  userEmail?: string | null
+  userFullName?: string | null
+  orderId?: number
+  orderNumber?: string | null
+  discountAmount?: number
+  usedAt?: string
 }
 
 /* ───────── Catalogue & Discovery: Tags ───────── */

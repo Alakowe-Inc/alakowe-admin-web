@@ -36,6 +36,7 @@ import CatalogueCollections from "@/admin/pages/CatalogueCollections";
 import CatalogueLandingPage from "@/admin/pages/CatalogueLandingPage";
 import CheckoutSessions from "@/admin/pages/CheckoutSessions";
 import CheckoutSessionDetail from "@/admin/pages/CheckoutSessionDetail";
+import Vouchers from "@/admin/pages/Vouchers";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/admin/orders/:id" element={adminWrap(<OrderDetail />)} />
           <Route path="/admin/checkout-sessions" element={adminWrap(<CheckoutSessions />)} />
           <Route path="/admin/checkout-sessions/:id" element={adminWrap(<CheckoutSessionDetail />)} />
+          <Route path="/admin/vouchers" element={adminWrap(<Vouchers />)} />
           <Route path="/admin/disputes" element={adminWrap(<Disputes />)} />
           <Route path="/admin/disputes/:orderNumber" element={adminWrap(<DisputeDetail />)} />
           <Route path="/admin/inventory" element={adminWrap(<Inventory />)} />

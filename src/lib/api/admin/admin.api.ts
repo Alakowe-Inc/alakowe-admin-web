@@ -47,10 +47,15 @@ import type {
   AdminDisputeResponse,
   AdminDisputeStatus,
   AdminDisputeDecision,
+  CreateVoucherRequestDto,
+  UpdateVoucherRequestDto,
+  VoucherResponse,
+  VoucherUsageResponse,
 } from "../types"
 
 export type { CustomerFilterParams } from "../types"
 export type { AdminDisputeResponse, AdminDisputeStatus, AdminDisputeDecision } from "../types"
+export type { CreateVoucherRequestDto, UpdateVoucherRequestDto, VoucherResponse, VoucherUsageResponse } from "../types"
 
 type LoginBody = LoginRequestDto
 type EmailOnlyBody = EmailOnlyRequest
@@ -64,6 +69,7 @@ export interface AdminListingFilterParams {
   Title?: string
   Author?: string
   Status?: ListingStatus
+  Priority?: number
   PageNumber?: number
   PageSize?: number
 }
@@ -113,13 +119,28 @@ export async function getAllCategoriesApi(): Promise<CategoryResponse[]> {
   return data as CategoryResponse[]
 }
 
-export async function approveListingApi(id: number, newPrice?: number): Promise<boolean> {
-  const { data } = await client.post(`/api/v1/AdminListing/approve/${id}`, { newPrice })
+export async function approveListingApi(id: number, newPrice?: number, priority?: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/approve/${id}`, { newPrice, priority })
   return data as boolean
 }
 
 export async function declineListingApi(id: number, reason?: string): Promise<boolean> {
   const { data } = await client.post(`/api/v1/AdminListing/decline/${id}`, { rejectionReason: reason ?? "" })
+  return data as boolean
+}
+
+export async function publishListingApi(id: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/publish/${id}`)
+  return data as boolean
+}
+
+export async function unpublishListingApi(id: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/unpublish/${id}`)
+  return data as boolean
+}
+
+export async function setListingPriorityApi(id: number, priority: number): Promise<boolean> {
+  const { data } = await client.post(`/api/v1/AdminListing/set-priority/${id}`, { priority })
   return data as boolean
 }
 
@@ -808,4 +829,45 @@ export async function getAdminCheckoutSessionApi(id: number): Promise<AdminCheck
 export async function getOrdersByCheckoutSessionApi(checkoutSessionId: number): Promise<AdminOrderSummaryDto[]> {
   const { data } = await client.get(`/api/v1/admin/orders/by-checkout/${checkoutSessionId}`)
   return data as AdminOrderSummaryDto[]
+}
+
+/* ───────── Admin Vouchers ───────── */
+
+export async function createVoucherApi(
+  body: CreateVoucherRequestDto,
+): Promise<VoucherResponse> {
+  const { data } = await client.post("/api/v1/adminvoucher/create", body)
+  return data as VoucherResponse
+}
+
+export async function updateVoucherApi(
+  body: UpdateVoucherRequestDto,
+): Promise<VoucherResponse> {
+  const { data } = await client.post("/api/v1/adminvoucher/update", body)
+  return data as VoucherResponse
+}
+
+export async function deleteVoucherApi(id: number): Promise<boolean> {
+  const { data } = await client.delete(`/api/v1/adminvoucher/delete/${id}`)
+  return data as boolean
+}
+
+export async function getVoucherByIdApi(id: number): Promise<VoucherResponse> {
+  const { data } = await client.get(`/api/v1/adminvoucher/${id}`)
+  return data as VoucherResponse
+}
+
+export async function getAllVouchersApi(): Promise<VoucherResponse[]> {
+  const { data } = await client.get("/api/v1/adminvoucher/all")
+  return data as VoucherResponse[]
+}
+
+export async function getActiveVouchersApi(): Promise<VoucherResponse[]> {
+  const { data } = await client.get("/api/v1/adminvoucher/active")
+  return data as VoucherResponse[]
+}
+
+export async function getVoucherUsagesApi(id: number): Promise<VoucherUsageResponse[]> {
+  const { data } = await client.get(`/api/v1/adminvoucher/${id}/usages`)
+  return data as VoucherUsageResponse[]
 }
